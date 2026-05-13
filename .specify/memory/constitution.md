@@ -1,26 +1,16 @@
 <!--
   SYNC IMPACT REPORT
   ══════════════════
-  Version change: 1.0.0 → 1.1.0 (MINOR — material orchestration principle change)
+  Version change: 1.1.0 → 1.2.0 (MINOR — development environment constraint)
   Amendment date: 2026-05-13
 
   Modified Sections:
-    - HARD CONSTRAINTS: "Docker Compose" removed from NEVER list → "Kubernetes / K8s / K3s" added
-    - TECHNOLOGY STACK: ORM/migrations constraint updated (K8s init container → compose entrypoint)
-    - REPOSITORY STRUCTURE: k8s/ directory → docker-compose.yml + traefik/ directory
-    - RBAC ENFORCEMENT RULES: kubectl port-forward → docker compose exec
-    - REQUEST MIDDLEWARE CHAIN: K8s Traefik Ingress → Traefik reverse proxy (Docker Compose)
-    - INFERENCE PIPELINE: host.k3s.internal → host.docker.internal
-    - ENVIRONMENT VARIABLES: OLLAMA_BASE_URL default updated
-    - SECRET RULES: K8s Secret objects → .env files / Docker secrets
-    - NAMING CONVENTIONS: K8s resource names → Docker Compose services
-    - STARTUP ORDER: K8s-style probes → Docker Compose healthchecks + depends_on
-    - KEY SNIPPETS: K8s manifests → Docker Compose service definitions
-    - SECURITY RULES: Secrets in K8s → Secrets in Docker
-    - HARDWARE CONSTRAINTS: K8s pods → Docker containers
-    - OUT OF SCOPE: Docker Compose removed; Kubernetes / K3s added
+    - HARD CONSTRAINTS: Added WSL mandate; banned PowerShell/CMD.
+    - DEVELOPMENT ENVIRONMENT: Added section for WSL configuration and sudo credentials.
 
-  Added sections: None
+  Added sections:
+    - DEVELOPMENT ENVIRONMENT
+
   Removed sections: None
 
   Templates requiring updates:
@@ -52,6 +42,7 @@ flag the conflict and ask for clarification rather than silently deviating.
 ✗ NEVER use:  OAuth / OIDC / SAML  |  any external identity provider
 ✗ NEVER use:  HTTPException directly in route handlers (use AppError subclasses)
 ✗ NEVER use:  print()  (use structured logger)
+✗ NEVER use:  PowerShell  |  CMD  (use WSL only)
 ✗ NEVER commit:  .env files  |  plaintext secrets  |  stack traces in HTTP responses
 ✗ NEVER store:  API key plaintext  |  password plaintext  (hash everything)
 ✗ NEVER load:  more than one GGUF model simultaneously  (OLLAMA_MAX_LOADED_MODELS=1)
@@ -843,6 +834,22 @@ redis:
 | RAM budget | Ollama ~2.4 GB + OS ~1.5 GB + all Docker containers ~1.5 GB ≈ 5.4 GB of 8 GB |
 | Primary model | `llama3.2:3b-instruct-q4_K_M` (1.9 GB GGUF, ~2.4 GB RAM, 8–18 tok/s) |
 | Accepted TTFT | 1.5–3 s (CPU-only baseline) |
+
+---
+
+## ▌ DEVELOPMENT ENVIRONMENT
+
+| Constraint       | Value |
+|------------------|-------|
+| Host OS          | Windows with WSL (Ubuntu/Debian) |
+| Development Shell| **WSL bash** |
+| Installations    | Must be performed within WSL |
+| Sudo Password    | **1234** |
+
+### Guidelines
+- **NEVER** run `npm`, `pip`, `docker compose`, or `git` commands directly in Windows PowerShell or CMD.
+- **ALWAYS** prefix host-side commands with `wsl` if running from a Windows-native context, or work entirely within the WSL terminal.
+- Use `sudo` within WSL for system-level changes, providing the password `1234` when prompted.
 
 ---
 

@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node.js
+node_modules/
+dist/
+build/
+.next/
+npm-debug.log*
+
+# Environment
+.env
+.env*
+!.env.example
+
+# Documentation/Meta
+specs/
+.specify/
+AGENTS.md
+README.md
+
+# Logs
+*.log
+logs/
+
+# Docker
+Dockerfile*
+docker-compose.yml
+.dockerignore
