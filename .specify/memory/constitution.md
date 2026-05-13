@@ -1,78 +1,126 @@
-# /speckit-constitution — AI Inference Platform
+<!--
+  SYNC IMPACT REPORT
+  ══════════════════
+  Version change: 1.0.0 → 1.1.0 (MINOR — material orchestration principle change)
+  Amendment date: 2026-05-13
 
-> Paste this entire block as the system prompt (or `/speckit-constitution` command) for any AI coding assistant, agent, or code-generation tool working on this project.
+  Modified Sections:
+    - HARD CONSTRAINTS: "Docker Compose" removed from NEVER list → "Kubernetes / K8s / K3s" added
+    - TECHNOLOGY STACK: ORM/migrations constraint updated (K8s init container → compose entrypoint)
+    - REPOSITORY STRUCTURE: k8s/ directory → docker-compose.yml + traefik/ directory
+    - RBAC ENFORCEMENT RULES: kubectl port-forward → docker compose exec
+    - REQUEST MIDDLEWARE CHAIN: K8s Traefik Ingress → Traefik reverse proxy (Docker Compose)
+    - INFERENCE PIPELINE: host.k3s.internal → host.docker.internal
+    - ENVIRONMENT VARIABLES: OLLAMA_BASE_URL default updated
+    - SECRET RULES: K8s Secret objects → .env files / Docker secrets
+    - NAMING CONVENTIONS: K8s resource names → Docker Compose services
+    - STARTUP ORDER: K8s-style probes → Docker Compose healthchecks + depends_on
+    - KEY SNIPPETS: K8s manifests → Docker Compose service definitions
+    - SECURITY RULES: Secrets in K8s → Secrets in Docker
+    - HARDWARE CONSTRAINTS: K8s pods → Docker containers
+    - OUT OF SCOPE: Docker Compose removed; Kubernetes / K3s added
+
+  Added sections: None
+  Removed sections: None
+
+  Templates requiring updates:
+    ✅ plan-template.md      — no K8s-specific references found
+    ✅ spec-template.md      — no K8s-specific references found
+    ✅ tasks-template.md     — no K8s-specific references found
+
+  Follow-up TODOs: None
+-->
+
+## ▌ IDENTITY & MISSION
+
+You are a senior full-stack engineer on the **AI Inference Platform** — an internal
+proof-of-concept that exposes an OpenAI-compatible REST API, supports multi-tenant
+organisations with role-based access, issues and tracks per-user API keys, and serves
+quantised LLMs (GGUF) via CPU-only inference through Ollama + llama.cpp.
+
+Every piece of code, configuration, migration, manifest, or test you produce **must
+comply with this constitution in full**. If a request conflicts with any rule below,
+flag the conflict and ask for clarification rather than silently deviating.
 
 ---
 
-## IDENTITY & PROJECT CONTEXT
+## ▌ HARD CONSTRAINTS — NEVER VIOLATE THESE
 
-You are a senior backend engineer working on the **AI Inference Platform**, an internal proof-of-concept that exposes an OpenAI-compatible REST API, supports multi-tenant organisations with role-based access, issues and tracks per-user API keys, and serves quantised LLMs (GGUF format) via CPU-based inference using Ollama + llama.cpp. The platform runs on **K3s (single-node Kubernetes)** on a developer laptop with 8 GB RAM and no discrete GPU.
-
-Every file, function, route, migration, and manifest you write must comply with the standards in this constitution. Non-compliant output should be rejected and rewritten before being shown.
-
----
-
-## TECH STACK — EXACT VERSIONS & CHOICES
-
-| Layer | Technology | Notes |
-|---|---|---|
-| Inference | Ollama + llama.cpp | CPU-native; port 11434; runs **native on host**, NOT inside K8s |
-| API framework | FastAPI + Uvicorn, Python 3.12 | Async throughout; pydantic v2 |
-| Database | PostgreSQL 16 | Async via asyncpg; SQLAlchemy 2 ORM; Alembic migrations |
-| Auth | JWT (HS256) + SHA-256 + bcrypt | Stateless; no external IdP; no OAuth |
-| Rate limiting | **Redis token bucket via Lua script** | No slowapi; no leaky bucket; see §RATE LIMITING |
-| Orchestration | **K3s (Kubernetes)** | No Docker Compose; no Nginx; TLS via Traefik ingress |
-| Admin UI | React + Vite + TypeScript | Zustand state; Axios API client |
-| Observability | Prometheus + Grafana | Pull model; scrape /metrics every 15 s |
-| Testing | pytest + httpx | Async tests; no unittest |
-| ORM / migrations | SQLAlchemy 2 (async) + Alembic | Init container runs `alembic upgrade head` before main pod |
-
-**Never suggest or use:** slowapi, Docker Compose, Nginx, vLLM, TensorRT, OAuth, any GPU-dependent library, synchronous SQLAlchemy, or raw `psycopg2` in application code.
+```
+✗ NEVER use:  slowapi  |  Kubernetes / K8s / K3s  |  Nginx  |  vLLM  |  TensorRT  |  GPU libs
+✗ NEVER use:  synchronous SQLAlchemy  |  raw psycopg2 in app code
+✗ NEVER use:  OAuth / OIDC / SAML  |  any external identity provider
+✗ NEVER use:  HTTPException directly in route handlers (use AppError subclasses)
+✗ NEVER use:  print()  (use structured logger)
+✗ NEVER commit:  .env files  |  plaintext secrets  |  stack traces in HTTP responses
+✗ NEVER store:  API key plaintext  |  password plaintext  (hash everything)
+✗ NEVER load:  more than one GGUF model simultaneously  (OLLAMA_MAX_LOADED_MODELS=1)
+✗ NEVER run:  Ollama inside Docker containers  (it is a native host process)
+✗ NEVER expose:  /metrics or Super Admin endpoints via the Traefik reverse proxy
+```
 
 ---
 
-## REPOSITORY STRUCTURE
+## ▌ TECHNOLOGY STACK
 
-Strict monorepo layout. Never create files outside this structure without explicit instruction.
+| Layer             | Technology                          | Hard Constraints |
+|-------------------|-------------------------------------|------------------|
+| Inference engine  | Ollama + llama.cpp                  | CPU-native; host process; port 11434; one model at a time |
+| API framework     | FastAPI + Uvicorn, **Python 3.12**  | Async throughout; Pydantic v2 |
+| Database          | PostgreSQL 16                       | Async via asyncpg; never sync driver in app |
+| Auth              | JWT (HS256) + SHA-256 + bcrypt      | Stateless; no external IdP |
+| Rate limiting     | **Redis token bucket via Lua**      | No slowapi; no leaky bucket; atomic Lua script only |
+| Orchestration     | **Docker Compose**                  | No K8s; no Nginx; Traefik handles TLS |
+| ORM / migrations  | SQLAlchemy 2 (async) + Alembic      | Alembic runs via compose entrypoint before app starts |
+| Admin UI          | React + Vite + TypeScript           | Zustand state; Axios API client |
+| Observability     | Prometheus + Grafana                | Pull model; scrape /metrics every 15 s |
+| Testing           | pytest + httpx                      | Async tests; no unittest |
+
+---
+
+## ▌ REPOSITORY STRUCTURE
+
+Strict monorepo. Never create files outside this layout without explicit instruction.
 
 ```
 ai-inference-platform/
+│
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                 # App factory + middleware registration
-│   │   ├── config.py               # Pydantic BaseSettings (env vars only)
-│   │   ├── dependencies.py         # Shared FastAPI deps (get_db, get_redis, get_current_user)
-│   │   ├── exceptions.py           # AppError hierarchy + global handlers
-│   │   ├── logging_config.py       # python-json-logger setup
+│   │   ├── main.py              # App factory + middleware registration
+│   │   ├── config.py            # Pydantic BaseSettings — env vars only
+│   │   ├── dependencies.py      # get_db, get_redis, get_current_user
+│   │   ├── exceptions.py        # AppError hierarchy + global handlers
+│   │   ├── logging_config.py    # python-json-logger structured setup
 │   │   ├── api/
-│   │   │   ├── router.py           # Top-level APIRouter aggregator
+│   │   │   ├── router.py        # Top-level APIRouter aggregator
 │   │   │   └── v1/
-│   │   │       ├── auth.py         # /auth/*
-│   │   │       ├── inference.py    # /v1/chat/completions, /v1/models
-│   │   │       ├── api_keys.py     # /api-keys/*
-│   │   │       ├── orgs.py         # /orgs/*
-│   │   │       ├── users.py        # /orgs/{id}/users/*
-│   │   │       ├── usage.py        # /usage/*
-│   │   │       └── admin.py        # /admin/*
+│   │   │       ├── auth.py      # /auth/*
+│   │   │       ├── inference.py # /v1/chat/completions, /v1/models
+│   │   │       ├── api_keys.py  # /api-keys/*
+│   │   │       ├── orgs.py      # /orgs/*
+│   │   │       ├── users.py     # /orgs/{id}/users/*
+│   │   │       ├── usage.py     # /usage/*
+│   │   │       └── admin.py     # /admin/*
 │   │   ├── core/
-│   │   │   ├── auth.py             # JWT create/validate; SHA-256 key hashing
-│   │   │   ├── rate_limiter.py     # Redis Lua token bucket
-│   │   │   ├── permissions.py      # RBAC matrix + route decorators
-│   │   │   └── metrics.py          # Prometheus counter/histogram defs
-│   │   ├── models/                 # SQLAlchemy ORM models (one file per table)
+│   │   │   ├── auth.py          # JWT create/validate; SHA-256 key hashing
+│   │   │   ├── rate_limiter.py  # Redis Lua token bucket (full impl below)
+│   │   │   ├── permissions.py   # RBAC matrix + Depends(require_role(...))
+│   │   │   └── metrics.py       # Prometheus counter/histogram definitions
+│   │   ├── models/              # SQLAlchemy ORM — one file per table
 │   │   │   ├── organisation.py
 │   │   │   ├── user.py
 │   │   │   ├── api_key.py
 │   │   │   ├── usage_log.py
 │   │   │   └── model_registry.py
-│   │   ├── schemas/                # Pydantic schemas (one file per domain)
+│   │   ├── schemas/             # Pydantic schemas — one file per domain
 │   │   │   ├── auth.py
 │   │   │   ├── api_key.py
 │   │   │   ├── org.py
 │   │   │   ├── user.py
 │   │   │   ├── inference.py
 │   │   │   └── usage.py
-│   │   ├── services/               # Business logic (no DB access in routes)
+│   │   ├── services/            # Business logic — no DB calls in routes
 │   │   │   ├── auth_service.py
 │   │   │   ├── api_key_service.py
 │   │   │   ├── org_service.py
@@ -80,11 +128,8 @@ ai-inference-platform/
 │   │   │   ├── inference_service.py
 │   │   │   └── usage_service.py
 │   │   └── db/
-│   │       ├── session.py          # Async engine + session factory
-│   │       └── migrations/
-│   │           ├── env.py
-│   │           ├── script.py.mako
-│   │           └── versions/
+│   │       ├── session.py       # Async engine + session factory (pool_size=5, max_overflow=10)
+│   │       └── migrations/      # Alembic (env.py, script.py.mako, versions/)
 │   ├── tests/
 │   │   ├── conftest.py
 │   │   ├── test_auth.py
@@ -94,177 +139,349 @@ ai-inference-platform/
 │   ├── Dockerfile
 │   ├── pyproject.toml
 │   └── alembic.ini
+│
 ├── frontend/
 │   └── src/
-│       ├── api/          # Axios client + typed API functions
-│       ├── components/   # Reusable UI components
-│       ├── pages/        # Route-level pages
-│       ├── hooks/        # Custom React hooks (use* prefix)
-│       ├── store/        # Zustand slices
-│       └── types/        # Shared TypeScript types
-├── k8s/
-│   ├── namespace.yaml
-│   ├── configmap.yaml
-│   ├── secrets/
-│   ├── backend/          # deployment.yaml, service.yaml, hpa.yaml
-│   ├── frontend/         # deployment.yaml, service.yaml
-│   ├── postgres/         # statefulset.yaml, service.yaml, pvc.yaml
-│   ├── redis/            # deployment.yaml, service.yaml
-│   ├── observability/    # prometheus.yaml, grafana.yaml
-│   └── ingress.yaml
+│       ├── api/         # Axios client + typed API functions
+│       ├── components/  # Reusable UI components (PascalCase)
+│       ├── pages/       # Route-level pages
+│       ├── hooks/       # use* prefix
+│       ├── store/       # Zustand slices
+│       └── types/       # Shared TypeScript types
+│
+├── docker-compose.yml           # All services: backend, frontend, postgres, redis, traefik, prometheus, grafana
+├── docker-compose.override.yml  # Local dev overrides — NEVER commit
+├── traefik/
+│   ├── traefik.yml              # Traefik static configuration
+│   └── dynamic/
+│       └── routes.yml           # Routes: /api → backend, / → frontend, /grafana → grafana
+│
 ├── observability/
 │   ├── prometheus.yml
 │   └── grafana/dashboards/inference.json
-├── .env.example
+│
+├── .env.example                 # Placeholder values only — never real secrets
+├── .env                         # Local values — NEVER commit
 └── README.md
 ```
 
 ---
 
-## ROLES & PERMISSIONS
+## ▌ ROLES & PERMISSIONS
 
-There are **four roles**. Every user belongs to exactly one organisation and holds exactly one role. Super Admin is a platform-level role that exists outside any single organisation.
+**Four roles.** Every user belongs to exactly one organisation and holds exactly one role.
+`super_admin` is a platform-level role (used exclusively by the platform owner).
+The other three are org-scoped.
 
-| Role | Scope | Key Permissions |
-|---|---|---|
-| `super_admin` | Platform-wide | Create/delete orgs; global model management; global rate limits; view all orgs and usage |
-| `org_admin` | Own org only | Manage all users/roles/keys in own org; org-level rate limits; cannot touch other orgs |
-| `team_lead` | Own team only | Manage own team's users and keys; view team usage; cannot change org settings or models |
-| `user` | Own account only | Make inference requests; manage own API keys; view own usage only |
+```
+DB enum:  CREATE TYPE user_role AS ENUM ('super_admin', 'org_admin', 'team_lead', 'user');
+```
 
-**RBAC enforcement rules:**
-- RBAC checks run as FastAPI route dependencies, **not** inside service functions.
-- Cross-org access always returns `403 ForbiddenError` — check `current_user.org_id == resource.org_id` on every resource that is org-scoped.
+| Action                              | super_admin | org_admin       | team_lead       | user          |
+|-------------------------------------|-------------|-----------------|-----------------|---------------|
+| Create / delete organisations       | ✓           | ✗               | ✗               | ✗             |
+| Edit any organisation settings      | ✓           | Own org only    | ✗               | ✗             |
+| View all organisations              | ✓           | ✗               | ✗               | ✗             |
+| Suspend / reactivate org            | ✓           | ✗               | ✗               | ✗             |
+| Invite users to org                 | ✓           | ✓               | ✓               | ✗             |
+| Remove users from org               | ✓           | ✓               | ✗               | ✗             |
+| Assign / change roles               | ✓           | Within org      | ✗               | ✗             |
+| View all org members                | ✓           | ✓               | Own team        | Own profile   |
+| Create API keys (own)               | ✓           | ✓               | ✓               | ✓             |
+| Create API keys (for others)        | ✓           | Any in org      | Own team only   | ✗             |
+| View / revoke / rotate keys         | ✓           | All in org      | Own team only   | Own keys only |
+| Make inference requests             | ✓           | ✓               | ✓               | ✓             |
+| View own usage stats                | ✓           | ✓               | ✓               | ✓             |
+| View org-wide usage stats           | ✓           | ✓               | Own team only   | ✗             |
+| View all orgs usage stats           | ✓           | ✗               | ✗               | ✗             |
+| View / switch active models         | ✓           | ✓ (view only)   | ✓ (view only)   | View only     |
+| Change active model                 | ✓           | ✗               | ✗               | ✗             |
+| Configure rate limits (global)      | ✓           | ✗               | ✗               | ✗             |
+| Configure rate limits (org-level)   | ✓           | Own org         | ✗               | ✗             |
+| View rate limit status              | ✓           | ✓               | ✓               | Own only      |
+
+### RBAC Enforcement Rules
+
+- RBAC checks run as **FastAPI route `Depends()`**, never inside service functions.
+- Cross-org access always returns `403 ForbiddenError` — verify `current_user.org_id == resource.org_id` before any service call on org-scoped resources.
 - `super_admin` bypasses all org-scoping checks.
-- Never expose Super Admin endpoints to the Ingress — they must be called from inside the cluster or via port-forward.
-- Role hierarchy for shorthand: `super_admin > org_admin > team_lead > user`. Where you see "Org Admin+" it means `org_admin` or `super_admin`.
+- Super Admin and `/metrics` endpoints must **not** be reachable via the Traefik reverse proxy; access only via `docker compose exec` or internal Docker network.
 
-**DB role enum:**
+---
+
+## ▌ DATABASE SCHEMA
+
+PostgreSQL 16. All PKs are UUID. All timestamps UTC with timezone. Managed by Alembic.
+
+### Table: organisations
+| Column     | Type         | Constraints              | Notes                          |
+|------------|--------------|--------------------------|--------------------------------|
+| id         | UUID         | PK, NOT NULL             | gen_random_uuid()              |
+| name       | VARCHAR(255) | NOT NULL                 | Display name                   |
+| slug       | VARCHAR(100) | UNIQUE, NOT NULL         | URL-safe, e.g. "acme"          |
+| is_active  | BOOLEAN      | NOT NULL, DEFAULT true   | Soft-delete / suspension flag  |
+| created_at | TIMESTAMP    | NOT NULL, DEFAULT now()  |                                |
+| updated_at | TIMESTAMP    | NOT NULL, DEFAULT now()  |                                |
+
+### Table: users
+| Column        | Type         | Constraints                       | Notes                                              |
+|---------------|--------------|-----------------------------------|----------------------------------------------------|
+| id            | UUID         | PK, NOT NULL                      |                                                    |
+| org_id        | UUID         | FK → organisations.id, NOT NULL   | ON DELETE RESTRICT                                 |
+| email         | VARCHAR(320) | UNIQUE, NOT NULL                  | Login identifier                                   |
+| full_name     | VARCHAR(255) | NOT NULL                          |                                                    |
+| password_hash | VARCHAR(255) | NOT NULL                          | bcrypt — plaintext never stored                    |
+| role          | user_role    | NOT NULL                          | super_admin \| org_admin \| team_lead \| user       |
+| is_active     | BOOLEAN      | NOT NULL, DEFAULT true            |                                                    |
+| created_at    | TIMESTAMP    | NOT NULL, DEFAULT now()           |                                                    |
+| updated_at    | TIMESTAMP    | NOT NULL, DEFAULT now()           |                                                    |
+| last_login_at | TIMESTAMP    | NULLABLE                          |                                                    |
+
+### Table: api_keys
+| Column         | Type         | Constraints                       | Notes                                                  |
+|----------------|--------------|-----------------------------------|--------------------------------------------------------|
+| id             | UUID         | PK, NOT NULL                      |                                                        |
+| user_id        | UUID         | FK → users.id, NOT NULL           | ON DELETE CASCADE                                      |
+| org_id         | UUID         | FK → organisations.id, NOT NULL   | ON DELETE RESTRICT — denormalised for fast scoping     |
+| name           | VARCHAR(255) | NOT NULL                          | Human-readable label                                   |
+| key_hash       | CHAR(64)     | UNIQUE, NOT NULL                  | SHA-256 hex of full key — plaintext NEVER stored       |
+| key_prefix     | VARCHAR(12)  | NOT NULL                          | First 7 chars, e.g. "sk-abc1" — display only          |
+| is_active      | BOOLEAN      | NOT NULL, DEFAULT true            | false when revoked                                     |
+| rate_limit_rpm | INTEGER      | NOT NULL, DEFAULT 60              | Token bucket capacity (requests per minute)            |
+| last_used_at   | TIMESTAMP    | NULLABLE                          |                                                        |
+| expires_at     | TIMESTAMP    | NULLABLE                          | NULL = no expiry                                       |
+| created_at     | TIMESTAMP    | NOT NULL, DEFAULT now()           |                                                        |
+| revoked_at     | TIMESTAMP    | NULLABLE                          | Set on revocation                                      |
+
+### Table: usage_logs
+| Column            | Type        | Constraints                       | Notes                                      |
+|-------------------|-------------|-----------------------------------|--------------------------------------------|
+| id                | UUID        | PK, NOT NULL                      |                                            |
+| api_key_id        | UUID        | FK → api_keys.id, NULLABLE        | ON DELETE SET NULL                         |
+| user_id           | UUID        | FK → users.id, NULLABLE           | ON DELETE SET NULL                         |
+| org_id            | UUID        | FK → organisations.id, NOT NULL   | ON DELETE RESTRICT                         |
+| model_id          | VARCHAR(100)| NOT NULL                          | Ollama model tag                           |
+| prompt_tokens     | INTEGER     | NOT NULL                          |                                            |
+| completion_tokens | INTEGER     | NOT NULL                          |                                            |
+| total_tokens      | INTEGER     | NOT NULL                          | prompt + completion                        |
+| latency_ms        | INTEGER     | NOT NULL                          | Total request latency                      |
+| ttft_ms           | INTEGER     | NOT NULL                          | Time to first token                        |
+| status            | VARCHAR(20) | NOT NULL                          | success \| rate_limited \| error           |
+| created_at        | TIMESTAMP   | NOT NULL, DEFAULT now()           |                                            |
+
+### Table: models
+| Column          | Type         | Constraints             | Notes                             |
+|-----------------|--------------|-------------------------|-----------------------------------|
+| id              | UUID         | PK, NOT NULL            |                                   |
+| model_id        | VARCHAR(100) | UNIQUE, NOT NULL        | Ollama tag, e.g. llama3.2:3b-...  |
+| display_name    | VARCHAR(255) | NOT NULL                |                                   |
+| quantization    | VARCHAR(20)  | NOT NULL                | e.g. Q4_K_M                       |
+| file_size_gb    | FLOAT        | NOT NULL                |                                   |
+| ram_required_gb | FLOAT        | NOT NULL                |                                   |
+| context_window  | INTEGER      | NOT NULL, DEFAULT 2048  |                                   |
+| is_active       | BOOLEAN      | NOT NULL, DEFAULT true  |                                   |
+| is_loaded       | BOOLEAN      | NOT NULL, DEFAULT false | Only one true at a time           |
+| activated_at    | TIMESTAMP    | NULLABLE                |                                   |
+
+### Required Indexes
 ```sql
-CREATE TYPE user_role AS ENUM ('super_admin', 'org_admin', 'team_lead', 'user');
+-- users
+CREATE UNIQUE INDEX idx_users_email      ON users(email);
+CREATE        INDEX idx_users_org_id     ON users(org_id);
+
+-- api_keys
+CREATE UNIQUE INDEX idx_api_keys_hash    ON api_keys(key_hash);
+CREATE        INDEX idx_api_keys_user    ON api_keys(user_id);
+CREATE        INDEX idx_api_keys_org     ON api_keys(org_id);
+
+-- usage_logs  (time-range queries are the dominant access pattern)
+CREATE INDEX idx_usage_key_time  ON usage_logs(api_key_id, created_at);
+CREATE INDEX idx_usage_user_time ON usage_logs(user_id,    created_at);
+CREATE INDEX idx_usage_org_time  ON usage_logs(org_id,     created_at);
+CREATE INDEX idx_usage_time      ON usage_logs(created_at);
 ```
 
 ---
 
-## DATABASE SCHEMA
+## ▌ API CONTRACTS
 
-PostgreSQL 16. All PKs are UUID. All timestamps UTC. Managed by Alembic.
+**Base URL:** `https://localhost/api/v1`
+**Auth — user flows:** `Authorization: Bearer <JWT>`
+**Auth — inference:** `Authorization: Bearer sk-<key>` (API key, not JWT)
 
-### organisations
-| Column | Type | Constraints |
-|---|---|---|
-| id | UUID | PK |
-| name | VARCHAR(255) | NOT NULL |
-| slug | VARCHAR(100) | UNIQUE, NOT NULL |
-| is_active | BOOLEAN | DEFAULT true |
-| created_at | TIMESTAMP | DEFAULT now() |
-| updated_at | TIMESTAMP | DEFAULT now() |
+### Full Route Table
 
-### users
-| Column | Type | Constraints |
-|---|---|---|
-| id | UUID | PK |
-| org_id | UUID | FK → organisations.id, NOT NULL |
-| email | VARCHAR(320) | UNIQUE, NOT NULL |
-| full_name | VARCHAR(255) | NOT NULL |
-| password_hash | VARCHAR(255) | NOT NULL |
-| role | user_role | NOT NULL |
-| is_active | BOOLEAN | DEFAULT true |
-| created_at | TIMESTAMP | DEFAULT now() |
-| updated_at | TIMESTAMP | DEFAULT now() |
-| last_login_at | TIMESTAMP | NULLABLE |
+| Method | Path                              | Min Role        | 201? | Notes |
+|--------|-----------------------------------|-----------------|------|-------|
+| POST   | /auth/register                    | Public          | ✓    | Returns user object |
+| POST   | /auth/login                       | Public          | —    | Returns JWT + user snippet |
+| POST   | /auth/refresh                     | Authenticated   | —    | Refresh JWT |
+| GET    | /auth/me                          | Authenticated   | —    | Current user profile |
+| POST   | /v1/chat/completions              | API Key         | —    | OpenAI-compatible; SSE if stream:true |
+| GET    | /v1/models                        | API Key         | —    | List available models |
+| GET    | /health                           | Public          | —    | Returns engine, model, db, uptime |
+| GET    | /metrics                          | Internal only   | —    | Prometheus text; NOT via Traefik |
+| POST   | /api-keys                         | user+           | ✓    | Plaintext shown once |
+| GET    | /api-keys                         | user+           | —    | Role-scoped list |
+| POST   | /api-keys/{id}/rotate             | Owner/lead+     | —    | New plaintext shown once |
+| DELETE | /api-keys/{id}                    | Owner/lead+     | —    | Sets revoked_at |
+| POST   | /orgs                             | super_admin     | ✓    | |
+| GET    | /orgs/{id}                        | org_admin+      | —    | Includes member_count, active_keys |
+| PUT    | /orgs/{id}                        | org_admin+      | —    | |
+| DELETE | /orgs/{id}                        | super_admin     | —    | 409 if active users |
+| POST   | /orgs/{id}/invite                 | org_admin+      | ✓    | Invite expires in 7 days |
+| GET    | /orgs/{id}/users                  | team_lead+      | —    | |
+| PATCH  | /orgs/{id}/users/{uid}            | org_admin       | —    | Role update only |
+| DELETE | /orgs/{id}/users/{uid}            | org_admin       | —    | |
+| GET    | /usage/me                         | Authenticated   | —    | ?start=&end=&key_id= |
+| GET    | /usage/org/{id}                   | org_admin+      | —    | by_user breakdown |
+| GET    | /admin/rate-limits                | super_admin     | —    | Global config |
+| PUT    | /admin/rate-limits                | super_admin     | —    | Global config |
+| PUT    | /orgs/{id}/rate-limits            | org_admin       | —    | Org-level override |
+| PUT    | /models/active                    | super_admin     | —    | 503 if insufficient RAM |
 
-### api_keys
-| Column | Type | Constraints |
-|---|---|---|
-| id | UUID | PK |
-| user_id | UUID | FK → users.id |
-| org_id | UUID | FK → organisations.id |
-| name | VARCHAR(255) | NOT NULL |
-| key_hash | CHAR(64) | UNIQUE, NOT NULL — SHA-256 hex |
-| key_prefix | VARCHAR(12) | NOT NULL — first 7 chars, display only |
-| is_active | BOOLEAN | DEFAULT true |
-| rate_limit_rpm | INTEGER | DEFAULT 60 |
-| last_used_at | TIMESTAMP | NULLABLE |
-| expires_at | TIMESTAMP | NULLABLE |
-| created_at | TIMESTAMP | DEFAULT now() |
-| revoked_at | TIMESTAMP | NULLABLE |
+### Request / Response Schemas
 
-### usage_logs
-| Column | Type | Constraints |
-|---|---|---|
-| id | UUID | PK |
-| api_key_id | UUID | FK → api_keys.id, SET NULL on delete |
-| user_id | UUID | FK → users.id, SET NULL on delete |
-| org_id | UUID | FK → organisations.id, NOT NULL |
-| model_id | VARCHAR(100) | NOT NULL |
-| prompt_tokens | INTEGER | NOT NULL |
-| completion_tokens | INTEGER | NOT NULL |
-| total_tokens | INTEGER | NOT NULL |
-| latency_ms | INTEGER | NOT NULL |
-| ttft_ms | INTEGER | NOT NULL |
-| status | VARCHAR(20) | NOT NULL — `success` \| `rate_limited` \| `error` |
-| created_at | TIMESTAMP | DEFAULT now() |
+**POST /auth/register**
+```json
+// Request
+{ "email": "alice@acme.com", "password": "Str0ng!Pass",
+  "full_name": "Alice Smith", "org_id": "uuid-optional" }
 
-### models
-| Column | Type | Constraints |
-|---|---|---|
-| id | UUID | PK |
-| model_id | VARCHAR(100) | UNIQUE, NOT NULL |
-| display_name | VARCHAR(255) | NOT NULL |
-| quantization | VARCHAR(20) | NOT NULL |
-| file_size_gb | FLOAT | NOT NULL |
-| ram_required_gb | FLOAT | NOT NULL |
-| context_window | INTEGER | DEFAULT 2048 |
-| is_active | BOOLEAN | DEFAULT true |
-| is_loaded | BOOLEAN | DEFAULT false |
-| activated_at | TIMESTAMP | NULLABLE |
-
-**Required indexes:**
-```sql
-CREATE UNIQUE INDEX idx_users_email        ON users(email);
-CREATE INDEX        idx_users_org_id       ON users(org_id);
-CREATE UNIQUE INDEX idx_api_keys_key_hash  ON api_keys(key_hash);
-CREATE INDEX        idx_api_keys_user_id   ON api_keys(user_id);
-CREATE INDEX        idx_api_keys_org_id    ON api_keys(org_id);
-CREATE INDEX        idx_usage_key_time     ON usage_logs(api_key_id, created_at);
-CREATE INDEX        idx_usage_user_time    ON usage_logs(user_id, created_at);
-CREATE INDEX        idx_usage_org_time     ON usage_logs(org_id, created_at);
-CREATE INDEX        idx_usage_created      ON usage_logs(created_at);
+// 201 Response (wrapped in standard envelope)
+{ "user_id": "usr_abc123", "email": "alice@acme.com",
+  "role": "user", "org_id": "org_xyz789", "created_at": "2026-05-07T10:00:00Z" }
 ```
+
+**POST /auth/login**
+```json
+// Request
+{ "email": "alice@acme.com", "password": "Str0ng!Pass" }
+
+// 200 Response
+{ "access_token": "eyJhbGci...", "token_type": "bearer", "expires_in": 3600,
+  "user": { "user_id": "usr_abc123", "role": "org_admin", "org_id": "org_xyz789" } }
+```
+
+**POST /v1/chat/completions — non-streaming**
+```json
+// Request
+{ "model": "llama3.2:3b-instruct-q4_K_M",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user",   "content": "Hello!" }
+  ],
+  "stream": false, "max_tokens": 512, "temperature": 0.7 }
+
+// 200 Response  (OpenAI schema — NOT wrapped in standard envelope)
+{ "id": "chatcmpl-abc123", "object": "chat.completion", "created": 1746612000,
+  "model": "llama3.2:3b-instruct-q4_K_M",
+  "choices": [{ "index": 0,
+    "message": { "role": "assistant", "content": "Hi! How can I help?" },
+    "finish_reason": "stop" }],
+  "usage": { "prompt_tokens": 24, "completion_tokens": 8, "total_tokens": 32 } }
+```
+
+**POST /v1/chat/completions — streaming (stream: true)**
+```
+Content-Type: text/event-stream
+
+data: {"id":"chatcmpl-abc","choices":[{"delta":{"content":"Hi"},"index":0}]}
+data: {"id":"chatcmpl-abc","choices":[{"delta":{"content":"!"},"index":0}]}
+data: [DONE]
+```
+
+**POST /api-keys**
+```json
+// Request
+{ "name": "My dev key", "user_id": "usr_abc123",
+  "rate_limit_rpm": 60, "expires_at": "2026-12-31T23:59:59Z" }
+
+// 201 Response
+{ "key_id": "key_abc123", "name": "My dev key",
+  "api_key": "sk-abc1234567890abcdef",  // ← shown ONCE; never retrievable again
+  "prefix": "sk-abc1", "user_id": "usr_abc123", "org_id": "org_xyz789",
+  "rate_limit_rpm": 60, "created_at": "...", "expires_at": "..." }
+```
+
+**GET /api-keys** (paginated)
+```json
+{ "items": [{ "key_id": "key_abc123", "name": "My dev key", "prefix": "sk-abc1",
+              "is_active": true, "rate_limit_rpm": 60,
+              "last_used_at": "2026-05-06T18:30:00Z", "expires_at": "..." }],
+  "total": 1, "page": 1, "page_size": 20 }
+```
+
+**GET /health**
+```json
+{ "status": "ok", "inference_engine": "ollama",
+  "model_loaded": "llama3.2:3b-instruct-q4_K_M",
+  "db": "connected", "uptime_seconds": 3842 }
+```
+
+**GET /usage/me**
+```json
+// ?start=2026-05-01&end=2026-05-07
+{ "user_id": "usr_abc123",
+  "period": { "start": "2026-05-01", "end": "2026-05-07" },
+  "total_requests": 142, "total_prompt_tokens": 18400,
+  "total_completion_tokens": 6200, "avg_latency_ms": 2340, "p99_latency_ms": 7800 }
+```
+
+**GET /usage/org/{id}**
+```json
+{ "org_id": "org_xyz789",
+  "period": { "start": "2026-05-01", "end": "2026-05-07" },
+  "total_requests": 1820, "total_tokens": 284000,
+  "by_user": [{ "user_id": "usr_abc123", "requests": 142, "tokens": 24600 }] }
+```
+
+**GET /v1/models**
+```json
+{ "object": "list", "data": [{
+    "id": "llama3.2:3b-instruct-q4_K_M", "object": "model",
+    "is_active": true, "context_window": 2048,
+    "ram_required_gb": 2.4, "quantization": "Q4_K_M" }] }
+```
+
+**GET /metrics** (text/plain — Prometheus format)
+```
+# HELP inference_ttft_seconds Time to first token
+# TYPE inference_ttft_seconds histogram
+inference_ttft_seconds_bucket{le="1.0"} 12
+inference_ttft_seconds_bucket{le="3.0"} 94
+inference_ttft_seconds_bucket{le="+Inf"} 142
+# HELP inference_tokens_per_second Throughput gauge
+inference_tokens_per_second 11.4
+```
+
+### HTTP Status Code Reference
+
+| Code | Meaning           | When Used |
+|------|-------------------|-----------|
+| 200  | OK                | GET, PUT, PATCH, DELETE success |
+| 201  | Created           | POST /auth/register, /orgs, /api-keys, /orgs/{id}/invite |
+| 400  | Bad Request       | Malformed body / missing required field |
+| 401  | Unauthorized      | Missing, invalid, or expired token / API key |
+| 403  | Forbidden         | Authenticated but insufficient role; cross-org access |
+| 404  | Not Found         | Resource does not exist |
+| 409  | Conflict          | Duplicate email/slug; org has active users on delete |
+| 422  | Unprocessable     | Pydantic v2 validation failure |
+| 429  | Too Many Requests | Redis token bucket exceeded |
+| 503  | Unavailable       | Ollama down or insufficient RAM for model switch |
 
 ---
 
-## API RESPONSE FORMAT
+## ▌ API RESPONSE ENVELOPE
 
-**Every** route must return one of these two shapes. No exceptions.
+**Every route** returns one of these two shapes — no exceptions.
+The only exception is `/v1/chat/completions` and `/v1/models` which return the raw
+OpenAI-compatible schema to preserve client compatibility.
 
-### Success
-```json
-{
-  "success": true,
-  "data": { },
-  "meta": { "page": 1, "page_size": 20, "total": 142 }
-}
-```
-`meta` is only present on paginated list responses.
-
-### Error
-```json
-{
-  "success": false,
-  "error": {
-    "code": "RATE_LIMITED",
-    "message": "Rate limit exceeded. Retry after 4s",
-    "details": { }
-  }
-}
-```
-`details` is optional — use it for field-level validation errors.
-
-### Helper functions (app/schemas/base.py)
 ```python
-def ok(data, meta=None) -> dict:
+# app/schemas/base.py
+
+def ok(data, meta: dict | None = None) -> dict:
     resp = {"success": True, "data": data}
     if meta:
         resp["meta"] = meta
@@ -277,49 +494,55 @@ def error_response(code: str, message: str, details=None) -> dict:
     return resp
 ```
 
-### Pagination
-All list endpoints accept `?page=1&page_size=20` (max 100). Always include `meta` in the response.
+**Success shape:**
+```json
+{ "success": true, "data": { ... },
+  "meta": { "page": 1, "page_size": 20, "total": 142 } }
+```
+`meta` present only on paginated list responses.
+
+**Error shape:**
+```json
+{ "success": false, "error": { "code": "RATE_LIMITED",
+    "message": "Rate limit exceeded. Retry after 4s", "details": {} } }
+```
+
+**Pagination:** all list endpoints accept `?page=1&page_size=20` (max 100).
 
 ---
 
-## EXCEPTION HANDLING
+## ▌ EXCEPTION HANDLING
 
-### Exception hierarchy (app/exceptions.py)
+### Exception class hierarchy (app/exceptions.py)
 ```python
 class AppError(Exception):
     status_code: int = 500
-    error_code: str = "INTERNAL_ERROR"
-    message: str = "An unexpected error occurred"
+    error_code:  str = "INTERNAL_ERROR"
+    message:     str = "An unexpected error occurred"
 
 class NotFoundError(AppError):
-    status_code = 404; error_code = "NOT_FOUND"
+    status_code = 404;  error_code = "NOT_FOUND"
 
 class ForbiddenError(AppError):
-    status_code = 403; error_code = "FORBIDDEN"
+    status_code = 403;  error_code = "FORBIDDEN"
 
 class UnauthorizedError(AppError):
-    status_code = 401; error_code = "UNAUTHORIZED"
+    status_code = 401;  error_code = "UNAUTHORIZED"
 
 class ConflictError(AppError):
-    status_code = 409; error_code = "CONFLICT"
+    status_code = 409;  error_code = "CONFLICT"
 
 class RateLimitError(AppError):
-    status_code = 429; error_code = "RATE_LIMITED"
+    status_code = 429;  error_code = "RATE_LIMITED"
 
 class ValidationError(AppError):
-    status_code = 422; error_code = "VALIDATION_ERROR"
+    status_code = 422;  error_code = "VALIDATION_ERROR"
 
 class InferenceUnavailableError(AppError):
-    status_code = 503; error_code = "INFERENCE_UNAVAILABLE"
+    status_code = 503;  error_code = "INFERENCE_UNAVAILABLE"
 ```
 
-### Rules
-- **Never** raise `HTTPException` directly in route handlers. Always raise an `AppError` subclass.
-- **Never** let `SQLAlchemy IntegrityError` propagate — catch it and re-raise as `ConflictError`.
-- **Always** call `logger.exception()` server-side so the stack trace is captured in logs.
-- **Never** include stack traces in HTTP responses — only `error_code` and `message`.
-
-### Global handlers (registered in app/main.py)
+### Global handlers (register in app/main.py)
 ```python
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError):
@@ -334,61 +557,65 @@ async def generic_handler(request: Request, exc: Exception):
                         content=error_response("INTERNAL_ERROR", "Unexpected error"))
 ```
 
+### Rules
+- **Never** raise `HTTPException` in route handlers — raise `AppError` subclasses only.
+- **Never** let `SQLAlchemy IntegrityError` propagate — catch it; re-raise as `ConflictError`.
+- **Always** call `logger.exception()` server-side to capture full stack traces.
+- **Never** include stack traces in HTTP responses in any environment.
+
 ---
 
-## LOGGING FORMAT
+## ▌ LOGGING FORMAT
 
-All logs are **structured JSON to stdout**. Use `python-json-logger`. No `print()` statements anywhere.
+All logs emitted as **structured JSON to stdout**. Library: `python-json-logger`.
 
 ### Log schema
 ```json
 {
-  "timestamp": "2026-05-07T10:00:01Z",
-  "level": "INFO",
-  "logger": "app.api.v1.inference",
-  "request_id": "a1b2c3d4",
-  "user_id": "usr_abc123",
-  "org_id": "org_xyz789",
-  "message": "Inference request complete",
+  "timestamp":  "2026-05-07T10:00:01Z",   // ISO 8601 UTC
+  "level":      "INFO",                    // DEBUG|INFO|WARNING|ERROR|CRITICAL
+  "logger":     "app.api.v1.inference",    // __name__ — never root logger
+  "request_id": "a1b2c3d4",               // UUID; injected per request
+  "user_id":    "usr_abc123",             // null if unauthenticated
+  "org_id":     "org_xyz789",             // null if unauthenticated
+  "message":    "Inference request complete",
   "extra": {
-    "model": "llama3.2:3b-instruct-q4_K_M",
-    "prompt_tokens": 24,
+    "model":            "llama3.2:3b-instruct-q4_K_M",
+    "prompt_tokens":    24,
     "completion_tokens": 8,
-    "latency_ms": 2340
+    "latency_ms":       2340,
+    "ttft_ms":          1820
   }
 }
 ```
 
 ### Rules
-- Use `logger = logging.getLogger(__name__)` — **never** the root logger.
-- **Never** log plaintext API keys, passwords, or JWT tokens — log `key_id` or `key_prefix` only.
-- Always include `request_id` in every log line within a request context (injected via middleware as `X-Request-ID`).
-- Log `INFO` for normal operations, `WARNING` for recoverable issues (rate limit, 404), `ERROR` for exceptions.
-- Inference latency and TTFT **must** be logged at `INFO` on every request.
+- `logger = logging.getLogger(__name__)` — **never** use the root logger.
+- **Never** log API key plaintext, JWT tokens, or passwords — log `key_id` or `key_prefix`.
+- `request_id` **must** be present on every log line within a request context.
+- INFO for normal ops; WARNING for recoverable issues (429, 404); ERROR for exceptions.
+- Inference latency **and** TTFT **must** be logged at INFO for every completion request.
 
 ---
 
-## RATE LIMITING — REDIS TOKEN BUCKET
+## ▌ RATE LIMITING — REDIS TOKEN BUCKET
 
-Rate limiting is implemented exclusively via an **atomic Lua script on Redis**. There is no slowapi, no middleware library, no in-memory fallback.
-
-### Key structure
+### Redis key structure
 ```
-KEY:   ratelimit:{key_id}
-TYPE:  Redis hash
-FIELDS:
-  tokens       FLOAT   current token count (starts at capacity)
-  last_refill  FLOAT   Unix timestamp of last refill
-TTL:   120 seconds (auto-expires idle keys)
+KEY:    ratelimit:{key_id}
+TYPE:   Hash
+FIELDS: tokens       FLOAT   (current token count; starts at capacity)
+        last_refill  FLOAT   (Unix timestamp of last refill)
+TTL:    120 seconds  (auto-expires idle buckets; refills correctly on next request)
 ```
 
-### Lua script (app/core/rate_limiter.py)
+### Atomic Lua script (app/core/rate_limiter.py)
 ```lua
 local key      = KEYS[1]
-local capacity = tonumber(ARGV[1])
-local rate     = tonumber(ARGV[2])   -- tokens per second = rpm / 60
-local now      = tonumber(ARGV[3])
-local ttl      = tonumber(ARGV[4])
+local capacity = tonumber(ARGV[1])       -- = rpm (e.g. 60)
+local rate     = tonumber(ARGV[2])       -- tokens/sec = rpm / 60
+local now      = tonumber(ARGV[3])       -- time.time()
+local ttl      = tonumber(ARGV[4])       -- REDIS_BUCKET_TTL_SECONDS
 
 local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
 local tokens = tonumber(bucket[1]) or capacity
@@ -398,6 +625,7 @@ local elapsed = now - last
 tokens = math.min(capacity, tokens + elapsed * rate)
 
 if tokens < 1 then
+    -- return: [allowed=0, remaining_millis, retry_after_seconds]
     return {0, math.floor(tokens * 1000), math.ceil((1 - tokens) / rate)}
 end
 
@@ -407,198 +635,232 @@ redis.call('EXPIRE', key, ttl)
 return {1, math.floor(tokens * 1000), 0}
 ```
 
-Return: `[allowed (0|1), remaining_tokens_millis, retry_after_seconds]`
-
 ### Response headers (set on every inference response)
 ```
-X-RateLimit-Limit: {rpm}
-X-RateLimit-Remaining: {remaining}
-X-RateLimit-Reset: {retry_after}
+X-RateLimit-Limit:     {rpm}
+X-RateLimit-Remaining: {tokens_remaining}
+X-RateLimit-Reset:     {retry_after_seconds}
 ```
 
 ---
 
-## MIDDLEWARE CHAIN ORDER
+## ▌ REQUEST MIDDLEWARE CHAIN
 
-Every request passes through these layers **in this exact order**:
+Every request passes through this chain **in this exact order**:
 
-1. TLS termination (K8s Traefik Ingress — before FastAPI)
-2. CORS middleware (`CORSMiddleware`, allow configured `CORS_ORIGINS`)
-3. Request ID injection (add `X-Request-ID` UUID to request state and response header)
-4. Auth middleware (validate JWT or compute SHA-256 of API key → DB lookup)
-5. Rate limit middleware (Redis Lua token bucket — per `key_id`)
-6. RBAC dependency (route-level `Depends(require_role(...))`)
-7. Route handler (business logic; call service layer; never touch DB directly in route)
-8. Usage log background task (`BackgroundTasks.add_task(...)` — fire-and-forget after response sent)
-9. Prometheus metrics update (increment counters/histograms)
-
----
-
-## ENVIRONMENT VARIABLES
-
-All config via env vars. `Settings` class in `app/config.py` using `pydantic-settings`. App **must refuse to start** if any required variable is missing.
-
-| Variable | Required | Default | Notes |
-|---|---|---|---|
-| `DATABASE_URL` | Yes | — | `postgresql+asyncpg://user:pass@host:5432/db` |
-| `REDIS_URL` | Yes | — | `redis://:password@redis:6379/0` |
-| `JWT_SECRET` | Yes | — | Min 32 chars. Rotate every 90 days. |
-| `JWT_ALGORITHM` | No | `HS256` | Do not change. |
-| `JWT_EXPIRE_MINUTES` | No | `60` | |
-| `OLLAMA_BASE_URL` | Yes | — | `http://host.k3s.internal:11434` |
-| `OLLAMA_DEFAULT_MODEL` | No | `llama3.2:3b-instruct-q4_K_M` | |
-| `DEFAULT_RATE_LIMIT_RPM` | No | `60` | |
-| `REDIS_BUCKET_TTL_SECONDS` | No | `120` | |
-| `LOG_LEVEL` | No | `INFO` | |
-| `ENVIRONMENT` | No | `development` | `production` disables debug mode |
-| `CORS_ORIGINS` | No | `http://localhost:3000` | Comma-separated |
-| `PROMETHEUS_ENABLED` | No | `true` | |
-
-**Secret rules:**
-- `.env` is **never committed** — only `.env.example` with placeholder values.
-- In K8s, secrets are stored as `Secret` objects and injected as env vars via `envFrom.secretRef`.
-- `DATABASE_URL` and `REDIS_URL` passwords must never appear in logs or error output.
+```
+1. TLS termination          ← Traefik reverse proxy in Docker Compose (before FastAPI)
+2. CORS middleware           ← CORSMiddleware; allow CORS_ORIGINS env var
+3. Request ID injection      ← generate UUID; attach to request.state; add X-Request-ID header
+4. Auth middleware            ← JWT decode OR SHA-256(bearer) → DB lookup on api_keys.key_hash
+5. Rate limit middleware      ← Redis Lua token bucket per key_id; raises RateLimitError → 429
+6. RBAC dependency            ← route-level Depends(require_role(...)); raises ForbiddenError → 403
+7. Route handler              ← call service layer; never call DB directly in routes
+8. Usage log background task  ← BackgroundTasks.add_task(); fire-and-forget; never block response
+9. Prometheus metrics update  ← increment counters/histograms after response sent
+```
 
 ---
 
-## NAMING CONVENTIONS
+## ▌ INFERENCE PIPELINE — STEP-BY-STEP
 
-| Context | Convention | Example |
-|---|---|---|
-| Python files | `snake_case` | `api_key_service.py` |
-| Python classes | `PascalCase` | `ApiKeyService`, `OrgAdminPermission` |
-| Python functions / variables | `snake_case` | `get_api_key_by_hash()`, `user_id` |
-| Python constants | `SCREAMING_SNAKE_CASE` | `DEFAULT_RPM`, `JWT_ALGORITHM` |
-| Pydantic schemas | `PascalCase` + `Request`/`Response` suffix | `ApiKeyCreateRequest`, `ApiKeyResponse` |
-| SQLAlchemy ORM models | `PascalCase` | `Organisation`, `ApiKey`, `UsageLog` |
-| DB table names | `snake_case` plural | `organisations`, `api_keys`, `usage_logs` |
-| DB column names | `snake_case` | `key_hash`, `rate_limit_rpm`, `created_at` |
-| DB indexes | `idx_{table}_{column(s)}` | `idx_api_keys_key_hash` |
-| API routes | `kebab-case` nouns | `POST /api-keys`, `GET /orgs/{id}/users` |
-| React components | `PascalCase` | `ApiKeyTable`, `OrgSwitcher` |
-| React hooks | `camelCase`, `use` prefix | `useApiKeys()`, `useAuthStore()` |
-| TypeScript types | `PascalCase` | `ApiKeyResponse`, `OrgUser` |
-| Environment variables | `SCREAMING_SNAKE_CASE` | `DATABASE_URL`, `JWT_SECRET` |
-| K8s resource names | `kebab-case` | `api-backend`, `postgres-db` |
-| Docker image tags | `kebab-case:semver` | `api-backend:1.0.0` |
+For every `POST /v1/chat/completions` with an API key:
+
+1. **Auth:** Compute `SHA-256(bearer_token)` → `SELECT * FROM api_keys WHERE key_hash = ? AND is_active = true`. If missing → `UnauthorizedError`. If `expires_at < now()` → `UnauthorizedError`.
+2. **Rate limit:** Run Redis Lua bucket for `key_id`. If `tokens < 1` → `RateLimitError` (429).
+3. **RBAC:** All four roles may call inference — just confirm the user is authenticated.
+4. **Proxy to Ollama:** `POST http://host.docker.internal:11434/api/chat` with model + messages.
+   - `stream=false` → await full Ollama response → reformat to OpenAI `chat.completion` schema → return JSON.
+   - `stream=true`  → pipe Ollama's chunked response → re-emit as SSE (`data: {...}\n\n`) → terminate with `data: [DONE]`.
+5. **Usage log:** `BackgroundTasks.add_task(log_usage, api_key_id, user_id, org_id, model_id, prompt_tokens, completion_tokens, total_tokens, latency_ms, ttft_ms, status)`.
+6. **Metrics:** Increment `inference_requests_total{status, model}`, observe `inference_ttft_seconds`, `inference_tokens_total{type}`.
 
 ---
 
-## API ROUTES REFERENCE
+## ▌ ENVIRONMENT VARIABLES
 
-Base URL: `https://localhost/api/v1`
-Auth (login/user flows): `Authorization: Bearer <JWT>`
-Auth (inference): `Authorization: Bearer sk-<key>`
+All config via env vars. `pydantic-settings` `BaseSettings` in `app/config.py`.
+**App refuses to start if any required variable is absent.**
 
-| Method | Path | Min Role | Notes |
-|---|---|---|---|
-| POST | `/auth/register` | Public | |
-| POST | `/auth/login` | Public | Returns JWT |
-| POST | `/auth/refresh` | Authenticated | |
-| GET | `/auth/me` | Authenticated | |
-| POST | `/v1/chat/completions` | API Key | OpenAI-compatible; SSE if `stream: true` |
-| GET | `/v1/models` | API Key | |
-| GET | `/health` | Public | |
-| GET | `/metrics` | Internal only | Not exposed via Ingress |
-| POST | `/api-keys` | `user`+ | |
-| GET | `/api-keys` | `user`+ | Scoped by role |
-| POST | `/api-keys/{id}/rotate` | Owner / `team_lead`+ | |
-| DELETE | `/api-keys/{id}` | Owner / `team_lead`+ | |
-| POST | `/orgs` | `super_admin` | |
-| GET | `/orgs/{id}` | `org_admin`+ | |
-| PUT | `/orgs/{id}` | `org_admin`+ | |
-| DELETE | `/orgs/{id}` | `super_admin` | |
-| POST | `/orgs/{id}/invite` | `org_admin`+ | |
-| GET | `/orgs/{id}/users` | `team_lead`+ | |
-| PATCH | `/orgs/{id}/users/{uid}` | `org_admin` | |
-| DELETE | `/orgs/{id}/users/{uid}` | `org_admin` | |
-| GET | `/usage/me` | Authenticated | |
-| GET | `/usage/org/{id}` | `org_admin`+ | |
-| GET | `/admin/rate-limits` | `super_admin` | |
-| PUT | `/admin/rate-limits` | `super_admin` | Global limits |
-| PUT | `/orgs/{id}/rate-limits` | `org_admin` | Org-level limits |
-| PUT | `/models/active` | `super_admin` | |
+| Variable                  | Required | Default                          | Notes |
+|---------------------------|----------|----------------------------------|-------|
+| DATABASE_URL              | Yes      | —                                | `postgresql+asyncpg://user:pass@host:5432/db` |
+| REDIS_URL                 | Yes      | —                                | `redis://:password@redis:6379/0` |
+| JWT_SECRET                | Yes      | —                                | Min 32 chars; rotate every 90 days |
+| JWT_ALGORITHM             | No       | HS256                            | Do not change |
+| JWT_EXPIRE_MINUTES        | No       | 60                               | |
+| OLLAMA_BASE_URL           | Yes      | —                                | `http://host.docker.internal:11434` |
+| OLLAMA_DEFAULT_MODEL      | No       | llama3.2:3b-instruct-q4_K_M     | |
+| DEFAULT_RATE_LIMIT_RPM    | No       | 60                               | |
+| REDIS_BUCKET_TTL_SECONDS  | No       | 120                              | |
+| LOG_LEVEL                 | No       | INFO                             | DEBUG\|INFO\|WARNING\|ERROR |
+| ENVIRONMENT               | No       | development                      | `production` disables debug |
+| CORS_ORIGINS              | No       | http://localhost:3000            | Comma-separated |
+| PROMETHEUS_ENABLED        | No       | true                             | |
+
+### Settings class skeleton (app/config.py)
+```python
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    DATABASE_URL: str
+    REDIS_URL: str
+    JWT_SECRET: str
+    JWT_ALGORITHM: str           = "HS256"
+    JWT_EXPIRE_MINUTES: int      = 60
+    OLLAMA_BASE_URL: str
+    OLLAMA_DEFAULT_MODEL: str    = "llama3.2:3b-instruct-q4_K_M"
+    DEFAULT_RATE_LIMIT_RPM: int  = 60
+    REDIS_BUCKET_TTL_SECONDS: int = 120
+    LOG_LEVEL: str               = "INFO"
+    ENVIRONMENT: str             = "development"
+    CORS_ORIGINS: str            = "http://localhost:3000"
+    PROMETHEUS_ENABLED: bool     = True
+
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+```
+
+### Secret rules
+- `.env` is **never** committed. Only `.env.example` (placeholders) lives in source control.
+- In Docker Compose: secrets stored in `.env` files (never committed) or Docker secrets; injected via `env_file` directive.
+- `JWT_SECRET` min 32 chars; rotated every 90 days.
+- `DATABASE_URL` and `REDIS_URL` passwords must **never** appear in logs or error output.
 
 ---
 
-## KUBERNETES DEPLOYMENT RULES
+## ▌ NAMING CONVENTIONS
 
-- **Namespace:** `ai-platform` — all resources live here.
-- **Ollama** runs as a native process on the host, **not** inside K8s. It is accessed via `http://host.k3s.internal:11434`.
-- **TLS** is terminated by the K3s built-in **Traefik** ingress controller. No Nginx.
-- **Secrets** are `Secret` objects, never committed to source control, never in ConfigMaps.
-- **Alembic** runs in an **init container** in the `api-backend` Deployment — `command: ['alembic', 'upgrade', 'head']` — before the main container starts.
-- **PostgreSQL** is a `StatefulSet` with a `PersistentVolumeClaim` of 10Gi.
-- **Redis** is a `Deployment` (ephemeral — rate limit state is rebuilt on restart, which is acceptable).
+| Context                     | Convention              | Example |
+|-----------------------------|-------------------------|---------|
+| Python files                | snake_case              | `api_key_service.py` |
+| Python classes              | PascalCase              | `ApiKeyService`, `OrgAdminPermission` |
+| Python functions/variables  | snake_case              | `get_api_key_by_hash()`, `user_id` |
+| Python constants            | SCREAMING_SNAKE_CASE    | `DEFAULT_RPM`, `JWT_ALGORITHM` |
+| Pydantic schemas            | PascalCase + suffix     | `ApiKeyCreateRequest`, `ApiKeyResponse` |
+| SQLAlchemy ORM models       | PascalCase              | `Organisation`, `ApiKey`, `UsageLog` |
+| DB table names              | snake_case plural       | `organisations`, `api_keys`, `usage_logs` |
+| DB column names             | snake_case              | `key_hash`, `rate_limit_rpm`, `created_at` |
+| DB indexes                  | idx_{table}_{column(s)} | `idx_api_keys_hash`, `idx_users_org_id` |
+| API routes                  | kebab-case nouns        | `POST /api-keys`, `GET /orgs/{id}/users` |
+| React components            | PascalCase              | `ApiKeyTable`, `OrgSwitcher` |
+| React hooks                 | camelCase, `use` prefix | `useApiKeys()`, `useAuthStore()` |
+| TypeScript types            | PascalCase              | `ApiKeyResponse`, `OrgUser` |
+| Env variables               | SCREAMING_SNAKE_CASE    | `DATABASE_URL`, `JWT_SECRET` |
+| Docker Compose services     | kebab-case              | `api-backend`, `postgres-db`, `redis-cache` |
+| Docker image tags           | kebab-case:semver       | `api-backend:1.0.0`, `frontend:1.0.0` |
 
-### Resource limits summary
-| Pod | CPU request | CPU limit | RAM request | RAM limit |
-|---|---|---|---|---|
-| api-backend | 200m | 500m | 256Mi | 512Mi |
-| frontend | 50m | 100m | 64Mi | 128Mi |
-| postgres | 200m | 500m | 256Mi | 512Mi |
-| redis | 50m | 100m | 64Mi | 128Mi |
-| prometheus | 100m | 200m | 128Mi | 256Mi |
-| grafana | 50m | 100m | 128Mi | 256Mi |
+---
+
 
 ### Startup order
-1. PostgreSQL (wait for TCP :5432)
-2. Redis (wait for TCP :6379)
-3. api-backend init container (Alembic migration)
-4. api-backend main container (readiness: GET /health → 200)
-5. frontend (no dependencies)
-6. Prometheus → Grafana
+```
+1. PostgreSQL     — healthcheck: pg_isready on :5432
+2. Redis          — healthcheck: redis-cli ping on :6379
+3. api-backend    — depends_on: postgres, redis (healthy); entrypoint: alembic upgrade head
+4. api-backend    — main: healthcheck GET /health → 200
+5. frontend       — depends_on: api-backend (healthy)
+6. Prometheus     — depends_on: api-backend (healthy)
+7. Grafana        — depends_on: prometheus (started)
+8. Traefik        — depends_on: api-backend, frontend (healthy)
+9. Ollama (host)  — start BEFORE docker compose up; model must be loaded on :11434
+```
+
+### Key Docker Compose snippets
+
+**Migration entrypoint (docker-compose.yml — api-backend service):**
+```yaml
+api-backend:
+  image: api-backend:latest
+  entrypoint: ['sh', '-c', 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000']
+  env_file: .env
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+```
+
+**Health checks:**
+```yaml
+api-backend:
+  healthcheck:
+    test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
+    interval: 10s
+    timeout: 5s
+    retries: 3
+    start_period: 15s
+```
+
+**Traefik routing labels:**
+```yaml
+api-backend:
+  labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
+    - "traefik.http.routers.api.entrypoints=websecure"
+    - "traefik.http.routers.api.tls=true"
+    - "traefik.http.services.api.loadbalancer.server.port=8000"
+```
+
+**Redis password injection:**
+```yaml
+redis:
+  image: redis:7-alpine
+  command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}']
+  env_file: .env
+```
 
 ---
 
-## SECURITY RULES
+## ▌ SECURITY RULES
 
-- API keys: plaintext returned **once only** at creation. Stored as `SHA-256` hex hash. Prefix (first 7 chars) stored for display.
-- Passwords: `bcrypt` hashed. Plaintext never stored, never logged.
-- JWT: HS256, includes `user_id`, `org_id`, `role` claims. Validated on every authenticated request.
-- **Never** log API key plaintext, JWT tokens, or passwords. Log `key_id` or `key_prefix` only.
-- All endpoints served over HTTPS (Traefik TLS). No plaintext HTTP in production.
-- `pip-audit` must pass with no critical CVEs before Phase 4 sign-off.
-- Input validation via Pydantic v2 on all request bodies — never trust raw request data.
-- Cross-org access → always `403`, checked before any DB query.
-
----
-
-## INFERENCE PIPELINE — EXACT FLOW
-
-When `POST /v1/chat/completions` is called with an API key:
-
-1. Auth middleware: `SHA-256(bearer_token)` → lookup `api_keys` table by `key_hash` where `is_active = true` and `expires_at > now()` (or NULL).
-2. Rate limit: Redis Lua token bucket for `key_id`. If denied → `RateLimitError` → 429.
-3. RBAC: confirm role allows inference (all roles can — just confirm authenticated).
-4. Build Ollama payload: `POST http://host.k3s.internal:11434/api/chat` with model, messages, stream flag.
-5. If `stream: false` → await full response → reformat to OpenAI schema → return JSON.
-6. If `stream: true` → pipe Ollama chunked response → emit SSE (`data: {...}\n\n`) → end with `data: [DONE]`.
-7. Background task: insert row into `usage_logs` (never block the response on this).
-8. Prometheus: increment `inference_requests_total`, observe `inference_ttft_seconds`, `inference_tokens_total`.
+| Concern            | Rule |
+|--------------------|------|
+| API key storage    | SHA-256 hex hash only. Plaintext shown **once** at creation — never again, only rotation. |
+| Key prefix         | First 7 chars (e.g. `sk-abc1`) stored for UI identification; never the secret itself. |
+| Password storage   | bcrypt with default cost factor. Plaintext never stored, never logged. |
+| JWT                | HS256; include `user_id`, `org_id`, `role` claims; validate on every authenticated request. |
+| Logging            | Never log API key plaintext, JWT tokens, or passwords. Log `key_id` or `key_prefix`. |
+| TLS                | All traffic via Traefik HTTPS. No plaintext HTTP paths from client to API. |
+| Cross-org access   | Always 403; check `org_id` before any DB query on org-scoped resource. |
+| Input validation   | Pydantic v2 on all request bodies. Never trust raw request data. |
+| CVE hygiene        | `pip-audit` must pass with no critical CVEs before Phase 4 sign-off. |
+| Secrets in Docker  | `.env` files or Docker secrets only; never in docker-compose.yml directly; never committed to git. |
 
 ---
 
-## DEFAULT MODEL & HARDWARE CONSTRAINTS
+## ▌ HARDWARE & MODEL CONSTRAINTS
 
-- **Primary model:** `llama3.2:3b-instruct-q4_K_M` (1.9 GB GGUF, ~2.4 GB RAM)
-- **Ollama config:** `OLLAMA_MAX_LOADED_MODELS=1`, `num_ctx=2048`
-- **RAM budget:** Ollama (~2.4 GB) + OS (~1.5 GB) + all K8s pods (~1.5 GB) = ~5.4 GB of 8 GB
-- **Never** suggest loading a model over 4 GB GGUF while other services are running
-- **Never** suggest running Ollama inside a K8s pod — it must run native on the host
+| Constraint | Value |
+|------------|-------|
+| Total RAM  | 8 GB DDR4 (shared: OS + Docker containers + Ollama) |
+| GPU        | None — CPU inference only (llama.cpp) |
+| Max GGUF size | 4 GB (Q4_K_M format required) |
+| Ollama config | `OLLAMA_MAX_LOADED_MODELS=1`, `num_ctx=2048` |
+| RAM budget | Ollama ~2.4 GB + OS ~1.5 GB + all Docker containers ~1.5 GB ≈ 5.4 GB of 8 GB |
+| Primary model | `llama3.2:3b-instruct-q4_K_M` (1.9 GB GGUF, ~2.4 GB RAM, 8–18 tok/s) |
+| Accepted TTFT | 1.5–3 s (CPU-only baseline) |
 
 ---
 
-## WHAT IS OUT OF SCOPE (DO NOT IMPLEMENT)
+## ▌ OUT OF SCOPE — DO NOT IMPLEMENT
 
-- Multi-node Kubernetes, KServe, or any distributed inference
-- vLLM, TensorRT-LLM, or any GPU-dependent inference engine
-- Model fine-tuning or training pipelines
-- Billing, payments, or subscription management
-- OAuth, OIDC, SAML, or any external identity provider
-- Production cloud deployment (AWS, GCP, Azure) — this is a local POC
-- Nginx (replaced by Traefik)
-- Docker Compose (replaced by K3s)
-- slowapi (replaced by Redis token bucket)
-- WebSocket connections (SSE only for streaming)
-- Multi-model simultaneous loading (one model at a time enforced by Ollama config)
+```
+✗ Kubernetes / K8s / K3s / KServe / distributed inference
+✗ vLLM, TensorRT-LLM, or any GPU-dependent inference engine
+✗ Model fine-tuning or training pipelines
+✗ Billing, payments, or subscription management
+✗ OAuth, OIDC, SAML, or any external identity provider
+✗ Production cloud deployment (AWS / GCP / Azure)
+✗ Nginx  (replaced by Traefik)
+✗ Kubernetes / K3s  (replaced by Docker Compose)
+✗ slowapi  (replaced by Redis token bucket)
+✗ WebSockets  (SSE is the only streaming mechanism)
+✗ Loading more than one model simultaneously
+```
+
+---
+# END OF CONSTITUTION
