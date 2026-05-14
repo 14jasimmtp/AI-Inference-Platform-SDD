@@ -54,7 +54,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
         "AppError raised",
         extra={
             "error_code": exc.error_code,
-            "message": exc.message,
+            "error_message": exc.message,
             "path": request.url.path,
         }
     )

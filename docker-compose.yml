@@ -1,114 +1,80 @@
 services:
-  api-backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: api-backend
-    entrypoint: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
-    env_file: .env
-    depends_on:
-      postgres-db:
-        condition: service_healthy
-      redis-cache:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    networks:
-      - platform-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.services.api.loadbalancer.server.port=8000"
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    depends_on:
-      api-backend:
-        condition: service_healthy
-    networks:
-      - platform-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
-
+  # 1. PostgreSQL Database
   postgres-db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: postgres-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-inference_platform}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ai-inference-platform-sdd_postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-inference_platform}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-inference_platform}" ]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - platform-network
 
+  # 2. Redis Cache
   redis-cache:
     image: redis:7-alpine
     container_name: redis-cache
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-redis}"]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 5
     networks:
       - platform-network
 
-  traefik:
-    image: traefik:v3.0
-    container_name: traefik
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-      - "8080:8080" # Dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - platform-network
-
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    volumes:
-      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - "9090:9090"
-    networks:
-      - platform-network
-
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    depends_on:
-      - prometheus
+  # 2. FastAPI Backend
+  api-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: api-backend
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000" ]
+    env_file: .env
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres-db:5432/inference_platform
+      REDIS_URL: redis://redis-cache:6379/0
+      # Reach host Ollama via proxy to bypass localhost restrictions
+      OLLAMA_BASE_URL: http://host.docker.internal:11435
     ports:
-      - "3001:3000"
+      - "8000:8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - platform-network
+
+  # 3. React/Vite Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      api-backend:
+        condition: service_healthy
     networks:
       - platform-network
 
@@ -117,4 +83,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  ai-inference-platform-sdd_postgres_data:
+    external: true

@@ -32,39 +32,50 @@ return {1, math.floor(tokens * 1000), 0}
 
 class RateLimiter:
     def __init__(self, redis_url: str):
-        self.redis = redis.from_url(redis_url, decode_responses=True)
+        try:
+            self.redis = redis.from_url(redis_url, decode_responses=True)
+            self.enabled = True
+        except Exception as e:
+            logger.error(f"Failed to initialize Redis for rate limiting: {e}")
+            self.enabled = False
         self.script = None
 
     async def check_rate_limit(self, key_id: str, rpm: int):
-        if not self.script:
-            self.script = self.redis.register_script(LUA_RATE_LIMITER)
-        
-        key = f"ratelimit:{key_id}"
-        rate = rpm / 60.0
-        now = time.time()
-        
-        # [allowed, remaining_millis, retry_after]
-        result = await self.script(
-            keys=[key],
-            args=[rpm, rate, now, settings.REDIS_BUCKET_TTL_SECONDS]
-        )
-        
-        allowed, remaining_tokens_ms, retry_after = result
-        
-        if not allowed:
-            logger.warning(
-                "Rate limit exceeded", 
-                extra={"key_id": key_id, "retry_after": retry_after}
-            )
-            raise RateLimitError(
-                message=f"Rate limit exceeded. Retry after {retry_after}s",
-                details={"retry_after": retry_after}
+        if not self.enabled:
+            return {"limit": rpm, "remaining": rpm, "reset": 0}
+
+        try:
+            if not self.script:
+                self.script = self.redis.register_script(LUA_RATE_LIMITER)
+            
+            key = f"ratelimit:{key_id}"
+            rate = rpm / 60.0
+            now = time.time()
+            
+            result = await self.script(
+                keys=[key],
+                args=[rpm, rate, now, settings.REDIS_BUCKET_TTL_SECONDS]
             )
             
-        return {
-            "limit": rpm,
-            "remaining": remaining_tokens_ms / 1000.0,
-            "reset": retry_after
-        }
+            allowed, remaining_tokens_ms, retry_after = result
+            
+            if not allowed:
+                logger.warning(
+                    "Rate limit exceeded", 
+                    extra={"key_id": key_id, "retry_after": retry_after}
+                )
+                raise RateLimitError(
+                    message=f"Rate limit exceeded. Retry after {retry_after}s",
+                    details={"retry_after": retry_after}
+                )
+                
+            return {
+                "limit": rpm,
+                "remaining": remaining_tokens_ms / 1000.0,
+                "reset": retry_after
+            }
+        except (redis.RedisError, ConnectionError) as e:
+            logger.warning(f"Redis error in rate limiter: {e}. Allowing request.")
+            return {"limit": rpm, "remaining": rpm, "reset": 0}
 
 rate_limiter = RateLimiter(settings.REDIS_URL)

@@ -1,0 +1,100 @@
+api-backend  | {"timestamp": "2026-05-14T05:37:13.672000Z", "level": "INFO", "name": "sqlalchemy.engine.Engine", "message": "SELECT users.id, users.email, users.full_name, users.password_hash, users.role, users.org_id, users.is_active, users.created_at, users.updated_at \nFROM users \nWHERE users.id = $1::UUID"}
+api-backend  | 2026-05-14 05:37:13,672 INFO sqlalchemy.engine.Engine [cached since 16.84s ago] ('61fce899-5de3-4d24-8bfd-f44e61b2ac72',)
+api-backend  | {"timestamp": "2026-05-14T05:37:13.672273Z", "level": "INFO", "name": "sqlalchemy.engine.Engine", "message": "[cached since 16.84s ago] ('61fce899-5de3-4d24-8bfd-f44e61b2ac72',)"}
+api-backend  | {"timestamp": "2026-05-14T05:37:21.697063Z", "level": "WARNING", "name": "app.core.rate_limiter", "message": "Redis error in rate limiter: Error -3 connecting to redis-cache:6379. Temporary failure in name resolution.. Allowing request."}
+api-backend  | 2026-05-14 05:37:21,703 INFO sqlalchemy.engine.Engine ROLLBACK
+api-backend  | {"timestamp": "2026-05-14T05:37:21.703795Z", "level": "INFO", "name": "sqlalchemy.engine.Engine", "message": "ROLLBACK"}
+api-backend  | ERROR:    Exception in ASGI application
+api-backend  |   + Exception Group Traceback (most recent call last):
+api-backend  |   |   File "/usr/local/lib/python3.12/site-packages/starlette/_utils.py", line 81, in collapse_excgroups
+api-backend  |   |     yield
+api-backend  |   |   File "/usr/local/lib/python3.12/site-packages/starlette/responses.py", line 274, in __call__
+api-backend  |   |     async with anyio.create_task_group() as task_group:
+api-backend  |   |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+api-backend  |   |   File "/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 799, in __aexit__
+api-backend  |   |     raise BaseExceptionGroup(
+api-backend  |   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+api-backend  |   +-+---------------- 1 ----------------
+api-backend  |     | Traceback (most recent call last):
+api-backend  |     |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+api-backend  |     |     await app(scope, receive, sender)
+api-backend  |     |   File "/usr/local/lib/python3.12/site-packages/fastapi/routing.py", line 121, in app
+api-backend  |     |     await response(scope, receive, send)
+api-backend  |     |   File "/usr/local/lib/python3.12/site-packages/starlette/responses.py", line 273, in __call__
+api-backend  |     |     with collapse_excgroups():
+api-backend  |     |          ^^^^^^^^^^^^^^^^^^^^
+api-backend  |     |   File "/usr/local/lib/python3.12/contextlib.py", line 158, in __exit__
+api-backend  |     |     self.gen.throw(value)
+api-backend  |     |   File "/usr/local/lib/python3.12/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+api-backend  |     |     raise exc
+api-backend  |     |   File "/usr/local/lib/python3.12/site-packages/starlette/responses.py", line 277, in wrap
+api-backend  |     |     await func()
+api-backend  |     |   File "/usr/local/lib/python3.12/site-packages/starlette/responses.py", line 250, in stream_response
+api-backend  |     |     async for chunk in self.body_iterator:
+api-backend  |     |   File "/backend/app/services/inference_service.py", line 143, in stream_chat_completion
+api-backend  |     |     raise InferenceUnavailableError("Ollama service is unavailable")
+api-backend  |     | app.exceptions.InferenceUnavailableError: Ollama service is unavailable
+api-backend  |     +------------------------------------
+api-backend  | 
+api-backend  | During handling of the above exception, another exception occurred:
+api-backend  | 
+api-backend  | Traceback (most recent call last):
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+api-backend  |     await app(scope, receive, sender)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/fastapi/routing.py", line 121, in app
+api-backend  |     await response(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/responses.py", line 273, in __call__
+api-backend  |     with collapse_excgroups():
+api-backend  |          ^^^^^^^^^^^^^^^^^^^^
+api-backend  |   File "/usr/local/lib/python3.12/contextlib.py", line 158, in __exit__
+api-backend  |     self.gen.throw(value)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+api-backend  |     raise exc
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/responses.py", line 277, in wrap
+api-backend  |     await func()
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/responses.py", line 250, in stream_response
+api-backend  |     async for chunk in self.body_iterator:
+api-backend  |   File "/backend/app/services/inference_service.py", line 143, in stream_chat_completion
+api-backend  |     raise InferenceUnavailableError("Ollama service is unavailable")
+api-backend  | app.exceptions.InferenceUnavailableError: Ollama service is unavailable
+api-backend  | 
+api-backend  | The above exception was the direct cause of the following exception:
+api-backend  | 
+api-backend  | Traceback (most recent call last):
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+api-backend  |     result = await app(  # type: ignore[func-returns-value]
+api-backend  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 56, in __call__
+api-backend  |     return await self.app(scope, receive, send)
+api-backend  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/fastapi/applications.py", line 1159, in __call__
+api-backend  |     await super().__call__(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/applications.py", line 90, in __call__
+api-backend  |     await self.middleware_stack(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+api-backend  |     raise exc
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+api-backend  |     await self.app(scope, receive, _send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/cors.py", line 96, in __call__
+api-backend  |     await self.simple_response(scope, receive, send, request_headers=headers)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/cors.py", line 154, in simple_response
+api-backend  |     await self.app(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+api-backend  |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+api-backend  |     raise exc
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+api-backend  |     await app(scope, receive, sender)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+api-backend  |     await self.app(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 660, in __call__
+api-backend  |     await self.middleware_stack(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 680, in app
+api-backend  |     await route.handle(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 276, in handle
+api-backend  |     await self.app(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/fastapi/routing.py", line 134, in app
+api-backend  |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+api-backend  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 56, in wrapped_app
+api-backend  |     raise RuntimeError("Caught handled exception, but response already started.") from exc
+api-backend  | RuntimeError: Caught handled exception, but response already started.
