@@ -480,14 +480,34 @@ These endpoints follow the [OpenAI API specification](https://platform.openai.co
 
 | Endpoint | Method | Auth | Description |
 |---|---|---|---|
-| `/api/v1/auth/register` | POST | None | Create a new user account |
-| `/api/v1/auth/login` | POST | None | Login and receive a JWT |
+| `/api/v1/auth/access` | POST | None | Checks if an email is registered |
+| `/api/v1/auth/register-login` | POST | None | Unified login (if email exists) or signup (if new) wizard |
+| `/api/v1/auth/verify` | GET | None | Activates user account and returns standard access token on success |
+| `/api/v1/auth/forgot-password` | POST | None | Dispatches password reset secure link to registered user email |
+| `/api/v1/auth/reset-password` | POST | None | Sets new password using a valid, non-expired recovery token |
+| `/api/v1/auth/sso/google` | GET | None | Helper redirect pathway targeting Mock SSO consent page |
+| `/api/v1/auth/sso/google/callback` | POST | None | Processes mock developer profile selection or genuine Google token validation |
 | `/api/v1/auth/me` | GET | JWT | Get current user profile |
 | `/api/v1/api-keys` | POST | JWT | Generate a new API key |
 | `/api/v1/api-keys` | GET | JWT | List all API keys |
 | `/api/v1/api-keys/{id}` | DELETE | JWT | Revoke an API key |
 | `/health` | GET | None | Application health check |
 | `/metrics` | GET | None | Prometheus metrics |
+
+---
+
+## Unified Auth & Verification Sandbox
+
+The platform features a fully containerized, offline-compatible development sandboxing suite:
+
+### 1. SMTP Sandboxing via Mailpit
+- An offline SMTP server is pre-configured in `docker-compose.yml` (on standard port `1025`).
+- All signup email verification links and password recovery messages are dispatched here.
+- **Access Sandbox UI**: Open [http://localhost:8025](http://localhost:8025) in your host browser to inspect transactional emails and click links in real-time.
+
+### 2. Dual-Mode Google SSO
+- **Real Google SSO**: Set `GOOGLE_CLIENT_ID` in `.env` and `VITE_GOOGLE_CLIENT_ID` in the frontend setup. Clicking "Continue with Google" will trigger Google's native One-Tap / OAuth prompt and securely validate accounts using Google's TokenInfo API.
+- **Offline Mock Fallback**: If no keys are specified, the system gracefully falls back to a locally rendered mock developer consent panel at `http://localhost:3000/mock-google-login` to ensure the platform remains 100% offline-compatible.
 
 ---
 

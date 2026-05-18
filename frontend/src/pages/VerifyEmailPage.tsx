@@ -1,0 +1,159 @@
+import React, { useEffect, useState } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { authApi } from '../api/auth'
+import { useAuthStore } from '../store/authStore'
+
+export const VerifyEmailPage: React.FC = () => {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const token = searchParams.get('token')
+
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying')
+  const [errorMsg, setErrorMsg] = useState('')
+
+  useEffect(() => {
+    const executeVerification = async () => {
+      if (!token) {
+        setStatus('error')
+        setErrorMsg('Verification token is missing.')
+        return
+      }
+
+      try {
+        const res = await authApi.verifyEmail(token)
+        const { access_token, user } = res.data.data
+
+        // Store session keys
+        localStorage.setItem('access_token', access_token)
+        localStorage.setItem('user', JSON.stringify(user))
+
+        // Set Zustand store session
+        useAuthStore.setState({ user, token: access_token, isAuthenticated: true })
+
+        setStatus('success')
+        
+        // Auto-redirect to dashboard after 2 seconds
+        setTimeout(() => {
+          navigate('/chat')
+        }, 2000)
+      } catch (err: any) {
+        setStatus('error')
+        setErrorMsg(err.response?.data?.error?.message || 'Verification failed. The token may be expired or already used.')
+      }
+    }
+
+    executeVerification()
+  }, [token, navigate])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'radial-gradient(circle at top right, #1a202c, #0d1117)',
+      fontFamily: 'Inter, sans-serif',
+      color: '#f7fafc',
+      padding: '20px',
+      boxSizing: 'border-box'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '460px',
+        background: 'rgba(22, 27, 34, 0.8)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px',
+        padding: '40px',
+        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.4)',
+        textAlign: 'center',
+        boxSizing: 'border-box'
+      }}>
+        {status === 'verifying' && (
+          <div>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              border: '3px solid rgba(66, 133, 244, 0.2)',
+              borderTop: '3px solid #4285f4',
+              borderRadius: '50%',
+              margin: '0 auto 24px auto',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            <h3 style={{ fontSize: '20px', fontWeight: 600, color: '#f7fafc', margin: '0 0 10px 0' }}>
+              Verifying Your Account
+            </h3>
+            <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
+              Checking secure token credentials. Please hold...
+            </p>
+          </div>
+        )}
+
+        {status === 'success' && (
+          <div>
+            <div style={{
+              fontSize: '48px',
+              color: '#10b981',
+              marginBottom: '20px'
+            }}>✓</div>
+            <h3 style={{ fontSize: '22px', fontWeight: 600, color: '#f7fafc', margin: '0 0 10px 0' }}>
+              Account Verified!
+            </h3>
+            <p style={{ fontSize: '14px', color: '#34d399', margin: '0 0 24px 0' }}>
+              Log in session established successfully.
+            </p>
+            <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>
+              Redirecting you to your chat workspace...
+            </p>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div>
+            <div style={{
+              fontSize: '48px',
+              color: '#ef4444',
+              marginBottom: '20px'
+            }}>⚠</div>
+            <h3 style={{ fontSize: '22px', fontWeight: 600, color: '#f7fafc', margin: '0 0 12px 0' }}>
+              Activation Failed
+            </h3>
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '8px',
+              color: '#f87171',
+              padding: '12px 16px',
+              fontSize: '13px',
+              lineHeight: '1.5',
+              marginBottom: '24px',
+              textAlign: 'left'
+            }}>
+              {errorMsg}
+            </div>
+            <button
+              onClick={() => navigate('/login')}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                background: '#3b82f6',
+                border: 'none',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
+            >
+              Back to Login
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

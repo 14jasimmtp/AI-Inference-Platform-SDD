@@ -1,6 +1,7 @@
 import uuid
+import datetime
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Boolean, UUID, Enum
+from sqlalchemy import String, Boolean, UUID, Enum, DateTime
 import enum
 from app.models.base import Base, TimestampMixin
 
@@ -28,6 +29,12 @@ class User(Base, TimestampMixin):
         UUID(as_uuid=True), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    verification_token: Mapped[str] = mapped_column(String(255), nullable=True)
+    verification_sent_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    reset_token: Mapped[str] = mapped_column(String(255), nullable=True)
+    reset_expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    google_sso_id: Mapped[str] = mapped_column(String(255), nullable=True)
     
     def __repr__(self):
         return f"<User {self.email}>"

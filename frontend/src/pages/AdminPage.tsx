@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, Trash2, RefreshCw } from 'lucide-react'
 
 // Basic layout for Admin
 export const AdminPage: React.FC = () => {
-  const { user, logout, refreshUser } = useAuthStore()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'orgs' | 'users' | 'keys'>('keys')
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
@@ -77,7 +77,7 @@ export const AdminPage: React.FC = () => {
         <div className="flex-1 p-8 overflow-y-auto">
           {activeTab === 'orgs' && <OrgsTab userLevel={userLevel} setActiveTab={setActiveTab} onSelect={(id) => { setSelectedOrgId(id); setActiveTab('users'); }} />}
           {activeTab === 'users' && userLevel >= 2 && <UsersTab userOrgId={selectedOrgId || user?.org_id || ''} userLevel={userLevel} />}
-          {activeTab === 'keys' && <ApiKeysTab userLevel={userLevel} />}
+          {activeTab === 'keys' && <ApiKeysTab />}
         </div>
       </div>
     </div>
@@ -110,8 +110,7 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await orgsApi.create(newOrgName, newOrgSlug)
-      const newOrgId = res.data.data.org_id
+      await orgsApi.create(newOrgName, newOrgSlug)
       setNewOrgName('')
       setNewOrgSlug('')
       
@@ -454,7 +453,7 @@ const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: numb
 }
 
 // API Keys Tab
-const ApiKeysTab = ({ userLevel }: { userLevel: number }) => {
+const ApiKeysTab = () => {
   const [keys, setKeys] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')

@@ -80,6 +80,16 @@ services:
     networks:
       - platform-network
 
+  # 4. Mailpit SMTP Sandbox
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "1025:1025"   # SMTP port
+      - "8025:8025"   # Web UI port
+    networks:
+      - platform-network
+
 networks:
   platform-network:
     driver: bridge

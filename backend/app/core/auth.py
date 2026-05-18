@@ -38,3 +38,8 @@ def create_access_token(
 def hash_api_key(api_key: str) -> str:
     """ Computes SHA-256 hash of API key for storage """
     return hashlib.sha256(api_key.encode()).hexdigest()
+
+def generate_secure_token() -> str:
+    """ Generates a cryptographically secure URL-safe token """
+    import secrets
+    return secrets.token_urlsafe(32)

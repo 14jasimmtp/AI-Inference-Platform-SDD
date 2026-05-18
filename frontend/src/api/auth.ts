@@ -14,6 +14,21 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Automatically handle expired tokens / 401 errors by logging the user out instantly
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user')
+      if (!window.location.pathname.startsWith('/auth')) {
+        window.location.href = '/auth'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Auth endpoints
 export const authApi = {
   register: (email: string, full_name: string, password: string) =>
@@ -22,6 +37,20 @@ export const authApi = {
     api.post('/api/v1/auth/login', { email, password }),
   me: () => api.get('/api/v1/auth/me'),
   rateLimit: () => api.get('/api/v1/auth/rate-limit'),
+  
+  // Feature Phase 3 Extensions
+  checkAccess: (email: string) =>
+    api.post('/api/v1/auth/access', { email }),
+  registerLoginUnified: (email: string, password: string, full_name?: string) =>
+    api.post('/api/v1/auth/register-login', { email, password, full_name }),
+  verifyEmail: (token: string) =>
+    api.get(`/api/v1/auth/verify?token=${token}`),
+  forgotPassword: (email: string) =>
+    api.post('/api/v1/auth/forgot-password', { email }),
+  resetPassword: (token: string, new_password: string) =>
+    api.post('/api/v1/auth/reset-password', { token, new_password }),
+  googleSsoCallback: (mock_google_token?: string, credential_token?: string, email?: string, full_name?: string) =>
+    api.post('/api/v1/auth/sso/google/callback', { mock_google_token, credential_token, email, full_name }),
 }
 
 // API Keys endpoints
