@@ -6,12 +6,12 @@ import { GoogleSsoButton } from '../components/GoogleSsoButton'
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate()
-  
+
   // Form States
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  
+
   // UI Flow States
   const [step, setStep] = useState<'email' | 'password-login' | 'password-signup'>('email')
   const [loading, setLoading] = useState(false)
@@ -21,7 +21,7 @@ export const LoginPage: React.FC = () => {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email) return
-    
+
     setLoading(true)
     setError('')
     setSuccessMsg('')
@@ -48,18 +48,18 @@ export const LoginPage: React.FC = () => {
     try {
       const res = await authApi.registerLoginUnified(email, password, fullName || undefined)
       const payload = res.data.data
-      
+
       if (payload.action === 'login') {
         const { access_token, user } = payload
         localStorage.setItem('access_token', access_token)
         localStorage.setItem('user', JSON.stringify(user))
-        
+
         // Update Zustand auth store state
         useAuthStore.setState({ user, token: access_token, isAuthenticated: true })
         navigate('/chat')
       } else {
         // Registration unverified flow triggered
-        setSuccessMsg('Account created! A secure verification link has been sent to your email. Check your inbox (Mailpit sandbox) to activate your account.')
+        setSuccessMsg('Account created! A secure verification link has been sent to your email. Check your inbox to activate your account.')
         setStep('email')
         setEmail('')
         setPassword('')
@@ -82,7 +82,7 @@ export const LoginPage: React.FC = () => {
     setSuccessMsg('')
     try {
       await authApi.forgotPassword(email)
-      setSuccessMsg('If the email is registered, a password recovery link has been sent to your inbox (Mailpit sandbox).')
+      setSuccessMsg('If the email is registered, a password recovery link has been sent to your inbox.')
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to request recovery.')
     } finally {

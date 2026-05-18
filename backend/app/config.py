@@ -25,11 +25,14 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000"
     PROMETHEUS_ENABLED: bool = True
     
-    # SMTP / Mailpit
-    SMTP_HOST: str = "mailpit"
-    SMTP_PORT: int = 1025
-    SMTP_FROM_EMAIL: str = "no-reply@inference-platform.local"
-    FRONTEND_URL: str = "http://localhost:3000"
+    # SMTP / Email Configuration
+    SMTP_HOST: str = Field("mailpit", env="SMTP_HOST")
+    SMTP_PORT: int = Field(1025, env="SMTP_PORT")
+    SMTP_USERNAME: str = Field("", env="SMTP_USERNAME")
+    SMTP_PASSWORD: str = Field("", env="SMTP_PASSWORD")
+    SMTP_USE_TLS: bool = Field(False, env="SMTP_USE_TLS")
+    SMTP_FROM_EMAIL: str = Field("no-reply@inference-platform.local", env="SMTP_FROM_EMAIL")
+    FRONTEND_URL: str = Field("http://localhost:3000", env="FRONTEND_URL")
     
     # Google OAuth
     GOOGLE_CLIENT_ID: str = Field("", env="GOOGLE_CLIENT_ID")

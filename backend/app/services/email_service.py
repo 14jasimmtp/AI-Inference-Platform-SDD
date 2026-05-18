@@ -19,6 +19,10 @@ class EmailService:
         msg.attach(MIMEText(html_content, "html"))
         
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            if settings.SMTP_USE_TLS:
+                server.starttls()
+            if settings.SMTP_USERNAME and settings.SMTP_PASSWORD:
+                server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
             server.sendmail(settings.SMTP_FROM_EMAIL, to_email, msg.as_string())
 
     @classmethod

@@ -10,8 +10,12 @@ export const VerifyEmailPage: React.FC = () => {
 
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying')
   const [errorMsg, setErrorMsg] = useState('')
+  const verificationStarted = React.useRef(false)
 
   useEffect(() => {
+    if (verificationStarted.current) return
+    verificationStarted.current = true
+
     const executeVerification = async () => {
       if (!token) {
         setStatus('error')

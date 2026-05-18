@@ -1,4 +1,4 @@
-# Quickstart Guide: Unified Authentication & Mailpit Sandbox
+# Quickstart Guide: Unified Authentication
 
 This guide documents the API routes, integration endpoints, and setup processes required to test the unified registration, verification, and password reset flows locally.
 
