@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { inferenceApi } from '../api/inference'
+import { useAuthStore } from './authStore'
 import type { ChatMessage } from '../types'
 
 export interface ChatSession {
@@ -12,15 +13,16 @@ export interface ChatSession {
 }
 
 interface ChatState {
-  sessions: ChatSession[]
-  currentSessionId: string | null
+  sessionsByUser: Record<string, ChatSession[]>
+  currentSessionIdByUser: Record<string, string | null>
   streamingContent: string
   isStreaming: boolean
   error: string | null
   model: string
   availableModels: string[]
 
-  // Computed
+  // Computed / Accessors
+  getSessions: () => ChatSession[]
   currentSession: () => ChatSession | null
 
   // Session management
@@ -30,6 +32,7 @@ interface ChatState {
 
   // Messaging
   sendMessage: (content: string) => Promise<void>
+  retryLastMessage: () => Promise<void>
 
   // Models
   setModel: (model: string) => void
@@ -48,81 +51,111 @@ const createSession = (): ChatSession => ({
   updatedAt: Date.now(),
 })
 
+const getUserId = () => useAuthStore.getState().user?.id || 'anonymous'
+
 export const useChatStore = create<ChatState>()(
   persist(
     (set, get) => ({
-      sessions: [],
-      currentSessionId: null,
+      sessionsByUser: {},
+      currentSessionIdByUser: {},
       streamingContent: '',
       isStreaming: false,
       error: null,
       model: 'llama3.2:3b-instruct-q4_K_M',
       availableModels: [],
 
+      getSessions: () => {
+        const userId = getUserId()
+        return get().sessionsByUser[userId] || []
+      },
+
       currentSession: () => {
-        const { sessions, currentSessionId } = get()
-        return sessions.find((s) => s.id === currentSessionId) ?? null
+        const userId = getUserId()
+        const sessions = get().sessionsByUser[userId] || []
+        const currentId = get().currentSessionIdByUser[userId]
+        return sessions.find((s) => s.id === currentId) ?? null
       },
 
       newChat: () => {
+        const userId = getUserId()
         const session = createSession()
+        set((s) => {
+          const userSessions = s.sessionsByUser[userId] || []
+          return {
+            sessionsByUser: { ...s.sessionsByUser, [userId]: [session, ...userSessions] },
+            currentSessionIdByUser: { ...s.currentSessionIdByUser, [userId]: session.id },
+            streamingContent: '',
+            error: null,
+          }
+        })
+      },
+
+      selectSession: (id) => {
+        const userId = getUserId()
         set((s) => ({
-          sessions: [session, ...s.sessions],
-          currentSessionId: session.id,
+          currentSessionIdByUser: { ...s.currentSessionIdByUser, [userId]: id },
           streamingContent: '',
           error: null,
         }))
       },
 
-      selectSession: (id) => {
-        set({ currentSessionId: id, streamingContent: '', error: null })
-      },
-
       deleteSession: (id) => {
+        const userId = getUserId()
         set((s) => {
-          const remaining = s.sessions.filter((sess) => sess.id !== id)
-          const newCurrentId =
-            s.currentSessionId === id
-              ? remaining[0]?.id ?? null
-              : s.currentSessionId
-          return { sessions: remaining, currentSessionId: newCurrentId }
+          const userSessions = s.sessionsByUser[userId] || []
+          const currentId = s.currentSessionIdByUser[userId]
+          const remaining = userSessions.filter((sess) => sess.id !== id)
+          const newCurrentId = currentId === id ? remaining[0]?.id ?? null : currentId
+          
+          return {
+            sessionsByUser: { ...s.sessionsByUser, [userId]: remaining },
+            currentSessionIdByUser: { ...s.currentSessionIdByUser, [userId]: newCurrentId },
+          }
         })
       },
 
       sendMessage: async (content: string) => {
         if (get().isStreaming) return
 
-        // Ensure we have an active session
+        const userId = getUserId()
         let session = get().currentSession()
+        
         if (!session) {
           const newSession = createSession()
-          set((s) => ({
-            sessions: [newSession, ...s.sessions],
-            currentSessionId: newSession.id,
-          }))
+          set((s) => {
+            const userSessions = s.sessionsByUser[userId] || []
+            return {
+              sessionsByUser: { ...s.sessionsByUser, [userId]: [newSession, ...userSessions] },
+              currentSessionIdByUser: { ...s.currentSessionIdByUser, [userId]: newSession.id },
+            }
+          })
           session = newSession
         }
 
         const userMsg: ChatMessage = { role: 'user', content }
         const updatedMessages = [...session.messages, userMsg]
 
-        // Derive title from first user message (first 40 chars)
         const isFirstMessage = session.messages.length === 0
         const title = isFirstMessage
           ? content.slice(0, 40) + (content.length > 40 ? '…' : '')
           : session.title
 
-        // Update session with user message
-        set((s) => ({
-          sessions: s.sessions.map((sess) =>
-            sess.id === session!.id
-              ? { ...sess, messages: updatedMessages, title, updatedAt: Date.now() }
-              : sess
-          ),
-          isStreaming: true,
-          streamingContent: '',
-          error: null,
-        }))
+        set((s) => {
+          const userSessions = s.sessionsByUser[userId] || []
+          return {
+            sessionsByUser: {
+              ...s.sessionsByUser,
+              [userId]: userSessions.map((sess) =>
+                sess.id === session!.id
+                  ? { ...sess, messages: updatedMessages, title, updatedAt: Date.now() }
+                  : sess
+              ),
+            },
+            isStreaming: true,
+            streamingContent: '',
+            error: null,
+          }
+        })
 
         const sessionId = session.id
 
@@ -135,19 +168,89 @@ export const useChatStore = create<ChatState>()(
           () => {
             const finalContent = get().streamingContent
             const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent }
-            set((s) => ({
-              sessions: s.sessions.map((sess) =>
-                sess.id === sessionId
-                  ? {
-                      ...sess,
-                      messages: [...sess.messages, assistantMsg],
-                      updatedAt: Date.now(),
-                    }
+            set((s) => {
+              const userSessions = s.sessionsByUser[userId] || []
+              return {
+                sessionsByUser: {
+                  ...s.sessionsByUser,
+                  [userId]: userSessions.map((sess) =>
+                    sess.id === sessionId
+                      ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
+                      : sess
+                  ),
+                },
+                streamingContent: '',
+                isStreaming: false,
+              }
+            })
+          },
+          (err) => {
+            set({ error: err, isStreaming: false, streamingContent: '' })
+          }
+        )
+      },
+
+      retryLastMessage: async () => {
+        if (get().isStreaming) return
+
+        const userId = getUserId()
+        const session = get().currentSession()
+        if (!session || session.messages.length === 0) return
+
+        let updatedMessages = [...session.messages]
+        const lastMsg = updatedMessages[updatedMessages.length - 1]
+
+        if (lastMsg.role === 'assistant') {
+          updatedMessages.pop()
+        }
+
+        if (updatedMessages.length === 0) return
+        const lastUserMsg = updatedMessages[updatedMessages.length - 1]
+        if (lastUserMsg.role !== 'user') return
+
+        set((s) => {
+          const userSessions = s.sessionsByUser[userId] || []
+          return {
+            sessionsByUser: {
+              ...s.sessionsByUser,
+              [userId]: userSessions.map((sess) =>
+                sess.id === session!.id
+                  ? { ...sess, messages: updatedMessages, updatedAt: Date.now() }
                   : sess
               ),
-              streamingContent: '',
-              isStreaming: false,
-            }))
+            },
+            isStreaming: true,
+            streamingContent: '',
+            error: null,
+          }
+        })
+
+        const sessionId = session.id
+
+        await inferenceApi.streamChatCompletion(
+          get().model,
+          updatedMessages,
+          (chunk) => {
+            set((s) => ({ streamingContent: s.streamingContent + chunk }))
+          },
+          () => {
+            const finalContent = get().streamingContent
+            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent }
+            set((s) => {
+              const userSessions = s.sessionsByUser[userId] || []
+              return {
+                sessionsByUser: {
+                  ...s.sessionsByUser,
+                  [userId]: userSessions.map((sess) =>
+                    sess.id === sessionId
+                      ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
+                      : sess
+                  ),
+                },
+                streamingContent: '',
+                isStreaming: false,
+              }
+            })
           },
           (err) => {
             set({ error: err, isStreaming: false, streamingContent: '' })
@@ -161,6 +264,9 @@ export const useChatStore = create<ChatState>()(
         try {
           const models = await inferenceApi.listModels()
           set({ availableModels: models })
+          // Remove auto-selection override if model is already selected to fix Issue #2
+          // We only set the model if the currently selected model is NOT in the list
+          // AND it's not the initial load where a valid model might already be selected.
           const current = get().model
           if (models.length > 0 && !models.includes(current)) {
             set({ model: models[0] })
@@ -173,11 +279,10 @@ export const useChatStore = create<ChatState>()(
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'chat-storage',
-      // Only persist sessions, model choice, and currentSessionId
+      name: 'chat-storage-v2',
       partialize: (state) => ({
-        sessions: state.sessions,
-        currentSessionId: state.currentSessionId,
+        sessionsByUser: state.sessionsByUser,
+        currentSessionIdByUser: state.currentSessionIdByUser,
         model: state.model,
       }),
     }

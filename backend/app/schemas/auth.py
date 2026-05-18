@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: str
+    org_id: Optional[uuid.UUID] = None
     is_active: bool
 
     model_config = {"from_attributes": True}

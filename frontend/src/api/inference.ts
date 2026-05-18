@@ -1,3 +1,5 @@
+import { useAuthStore } from '../store/authStore'
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
 export interface StreamChunk {
@@ -18,6 +20,10 @@ export const inferenceApi = {
     const res = await fetch(`${API_BASE}/v1/models`, {
       headers: { Authorization: `Bearer ${token}` },
     })
+    if (res.status === 401) {
+      useAuthStore.getState().logout()
+      throw new Error('Unauthorized')
+    }
     if (!res.ok) throw new Error('Failed to list models')
     const data = await res.json()
     return (data.data || []).map((m: { id: string }) => m.id)
@@ -40,6 +46,12 @@ export const inferenceApi = {
         },
         body: JSON.stringify({ model, messages, stream: true }),
       })
+
+      if (response.status === 401) {
+        useAuthStore.getState().logout()
+        onError('Unauthorized')
+        return
+      }
 
       if (!response.ok) {
         const err = await response.json()

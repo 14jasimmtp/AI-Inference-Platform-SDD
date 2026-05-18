@@ -1,12 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { authApi } from '../api/auth'
+import { authApi, api } from '../api/auth'
 
 interface User {
   id: string
   email: string
   full_name: string
   role: string
+  org_id?: string | null
 }
 
 interface AuthState {
@@ -19,6 +20,7 @@ interface AuthState {
   register: (email: string, fullName: string, password: string) => Promise<void>
   logout: () => void
   clearError: () => void
+  refreshUser: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -65,6 +67,16 @@ export const useAuthStore = create<AuthState>()(
       },
 
       clearError: () => set({ error: null }),
+      
+      refreshUser: async () => {
+        try {
+          const res = await authApi.me()
+          const { data: user } = res.data
+          set({ user })
+        } catch (e) {
+          console.error("Failed to refresh user", e)
+        }
+      },
     }),
     {
       name: 'auth-storage',
@@ -72,3 +84,15 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
+
+// Intercept 401 Unauthorized responses to automatically log out the user
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      useAuthStore.getState().logout()
+    }
+    return Promise.reject(error)
+  }
+)
+

@@ -19,14 +19,19 @@ const formatDate = (ts: number) => {
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate()
   const { logout, user } = useAuthStore()
+  const sessionsByUser = useChatStore((state) => state.sessionsByUser)
+  const currentSessionIdByUser = useChatStore((state) => state.currentSessionIdByUser)
   const {
-    sessions, currentSessionId, currentSession,
+    currentSession,
     streamingContent, isStreaming, error,
     model, availableModels,
     newChat, selectSession, deleteSession,
-    setModel, sendMessage, loadModels, clearError,
+    setModel, sendMessage, loadModels, clearError, retryLastMessage,
   } = useChatStore()
 
+  const userId = user?.id || 'anonymous'
+  const sessions = sessionsByUser[userId] || []
+  const currentSessionId = currentSessionIdByUser[userId]
   const active = currentSession()
 
   useEffect(() => {
@@ -92,9 +97,18 @@ export const ChatPage: React.FC = () => {
               <span className="user-role">{user?.role || 'user'}</span>
             </div>
           </div>
-          <button id="logout-btn" onClick={handleLogout} className="logout-btn" title="Logout">
-            ↩
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => navigate('/settings')} 
+              className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+              title="Settings"
+            >
+              ⚙️
+            </button>
+            <button id="logout-btn" onClick={handleLogout} className="logout-btn" title="Logout">
+              ↩
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -115,6 +129,7 @@ export const ChatPage: React.FC = () => {
           messages={active?.messages ?? []}
           streamingContent={streamingContent}
           isStreaming={isStreaming}
+          onRetry={retryLastMessage}
         />
 
         {/* Input + Model Picker */}

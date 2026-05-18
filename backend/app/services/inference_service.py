@@ -43,6 +43,7 @@ class InferenceService:
             "model": request.model,
             "messages": [m.model_dump() for m in request.messages],
             "stream": False,
+            "keep_alive": -1,
             "options": {
                 "temperature": request.temperature,
                 "num_ctx": 2048,
@@ -99,6 +100,7 @@ class InferenceService:
             "model": request.model,
             "messages": [m.model_dump() for m in request.messages],
             "stream": True,
+            "keep_alive": -1,
             "options": {
                 "temperature": request.temperature,
                 "num_ctx": 2048,

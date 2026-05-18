@@ -44,6 +44,8 @@ services:
       REDIS_URL: redis://redis-cache:6379/0
       # Reach host Ollama via proxy to bypass localhost restrictions
       OLLAMA_BASE_URL: http://host.docker.internal:11435
+    volumes:
+      - ./backend/app:/backend/app
     ports:
       - "8000:8000"
     healthcheck:

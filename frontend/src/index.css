@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* ── CSS Reset & Tokens ─────────────────────────────────── */
@@ -435,10 +439,14 @@ body {
   border: 1px solid rgba(99,102,241,0.25);
   border-top-right-radius: 4px;
 }
+.bubble.user.has-retry {
+  padding-bottom: 28px;
+}
 .bubble.assistant {
   background: var(--ai-bubble);
   border: 1px solid var(--border);
   border-top-left-radius: 4px;
+  padding-bottom: 28px; /* Give room for the Copy button at the bottom */
 }
 .bubble.streaming { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow); }
 
@@ -472,7 +480,7 @@ body {
 
 /* ── Input Zone (wrapper + toolbar) ─────────────────────── */
 .input-zone {
-  padding: 12px 24px 18px;
+  padding: 8px 24px 12px;
   border-top: 1px solid var(--border);
   background: var(--bg-surface);
   display: flex;
@@ -486,8 +494,8 @@ body {
   gap: 10px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 10px 10px 10px 16px;
+  border-radius: var(--radius-lg);
+  padding: 8px 8px 8px 16px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .input-wrapper:focus-within {
@@ -502,16 +510,17 @@ body {
   outline: none;
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.5;
   resize: none;
   max-height: 200px;
   overflow-y: auto;
+  padding: 6px 0; /* Aligns text visually with the send button */
 }
 .chat-textarea::placeholder { color: var(--text-muted); }
 
 .send-btn {
-  width: 38px; height: 38px;
+  width: 36px; height: 36px;
   background: linear-gradient(135deg, #6366f1, #818cf8);
   border: none;
   border-radius: 50%;
@@ -522,7 +531,7 @@ body {
   color: white;
 }
 .send-btn svg { width: 16px; height: 16px; }
-.send-btn:hover:not(:disabled) { transform: scale(1.1); box-shadow: var(--shadow-glow); }
+.send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: var(--shadow-glow); }
 .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 /* Toolbar row below input */
@@ -667,3 +676,121 @@ body {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
 }
+
+/* ── Markdown Styles inside Chat Bubbles ─────────────────── */
+.markdown-body {
+  font-size: 0.925rem;
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
+.markdown-p {
+  margin-bottom: 0.75rem;
+}
+.markdown-p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-bold {
+  font-weight: 700;
+  color: #ffffff; /* Bright white for bold emphasis */
+}
+
+.markdown-ul, .markdown-ol {
+  margin-left: 1.5rem;
+  margin-bottom: 0.85rem;
+}
+.markdown-ul {
+  list-style-type: disc;
+}
+.markdown-ol {
+  list-style-type: decimal;
+}
+
+.markdown-li {
+  margin-bottom: 0.35rem;
+  padding-left: 0.25rem;
+}
+.markdown-li:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-h1, .markdown-h2, .markdown-h3 {
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.markdown-h1 { font-size: 1.25rem; }
+.markdown-h2 { font-size: 1.15rem; }
+.markdown-h3 { font-size: 1.05rem; }
+
+.markdown-code-inline {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--accent-hover);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85rem;
+}
+
+.markdown-code-block-container {
+  margin: 0.75rem 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.markdown-code-block {
+  background: #08090d; /* Ultra dark backgrounds for code blocks */
+  padding: 12px 16px;
+  margin: 0;
+  overflow-x: auto;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+.markdown-spacer {
+  height: 0.5rem;
+}
+
+/* ── Bubble Actions ──────────────────────────────────────── */
+.bubble-actions {
+  position: absolute;
+  bottom: 6px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.bubble:hover .bubble-actions {
+  opacity: 0.85;
+}
+
+.bubble-action-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.bubble-action-btn:hover {
+  opacity: 1 !important;
+  border-color: var(--accent);
+  color: var(--accent-hover);
+  background: var(--accent-glow);
+}
+

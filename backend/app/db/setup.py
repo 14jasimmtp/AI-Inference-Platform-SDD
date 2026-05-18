@@ -76,3 +76,29 @@ async def setup_db():
     # Running in a threadpool to avoid blocking the event loop if necessary, 
     # but since it's startup it's usually fine.
     run_migrations()
+    
+    # Seed superuser
+    try:
+        from app.db.session import AsyncSessionLocal
+        from app.models.user import User, UserRole
+        from app.core.auth import get_password_hash
+        import uuid
+        from sqlalchemy import select
+
+        async with AsyncSessionLocal() as db:
+            admin_email = "admin@platform.com"
+            result = await db.execute(select(User).where(User.email == admin_email))
+            if not result.scalar_one_or_none():
+                user = User(
+                    id=uuid.uuid4(),
+                    email=admin_email,
+                    full_name="System Administrator",
+                    password_hash=get_password_hash("admin123"),
+                    role=UserRole.super_admin,
+                    is_active=True
+                )
+                db.add(user)
+                await db.commit()
+                logger.info(f"Seeded superuser: {admin_email}")
+    except Exception as e:
+        logger.error(f"Failed to seed superuser: {e}")

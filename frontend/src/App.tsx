@@ -4,13 +4,28 @@ import { useAuthStore } from './store/authStore'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ChatPage } from './pages/ChatPage'
+import { AdminPage } from './pages/AdminPage'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuthStore()
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
 }
 
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuthStore()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
 const App: React.FC = () => {
+  const { isAuthenticated, refreshUser } = useAuthStore()
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      refreshUser()
+    }
+  }, [isAuthenticated, refreshUser])
+
   return (
     <BrowserRouter>
       <Routes>
@@ -22,6 +37,14 @@ const App: React.FC = () => {
             <ProtectedRoute>
               <ChatPage />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
           }
         />
         <Route path="*" element={<Navigate to="/chat" replace />} />

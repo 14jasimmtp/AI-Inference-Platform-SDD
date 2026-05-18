@@ -29,6 +29,26 @@ redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
 redis.call('EXPIRE', key, ttl)
 return {1, math.floor(tokens * 1000), 0}
 """
+LUA_PEEK_RATE_LIMITER = """
+local key      = KEYS[1]
+local capacity = tonumber(ARGV[1])
+local rate     = tonumber(ARGV[2])
+local now      = tonumber(ARGV[3])
+
+local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+local tokens = tonumber(bucket[1]) or capacity
+local last   = tonumber(bucket[2]) or now
+
+local elapsed = now - last
+tokens = math.min(capacity, tokens + elapsed * rate)
+
+local retry_after = 0
+if tokens < 1 then
+    retry_after = math.ceil((1 - tokens) / rate)
+end
+
+return {math.floor(tokens * 1000), retry_after}
+"""
 
 class RateLimiter:
     def __init__(self, redis_url: str):
@@ -39,6 +59,7 @@ class RateLimiter:
             logger.error(f"Failed to initialize Redis for rate limiting: {e}")
             self.enabled = False
         self.script = None
+        self.peek_script = None
 
     async def check_rate_limit(self, key_id: str, rpm: int):
         if not self.enabled:
@@ -71,11 +92,34 @@ class RateLimiter:
                 
             return {
                 "limit": rpm,
-                "remaining": remaining_tokens_ms / 1000.0,
+                "remaining": int(remaining_tokens_ms / 1000.0),
                 "reset": retry_after
             }
         except (redis.RedisError, ConnectionError) as e:
             logger.warning(f"Redis error in rate limiter: {e}. Allowing request.")
+            return {"limit": rpm, "remaining": rpm, "reset": 0}
+
+    async def peek_rate_limit(self, key_id: str, rpm: int):
+        if not self.enabled:
+            return {"limit": rpm, "remaining": rpm, "reset": 0}
+
+        try:
+            if not self.peek_script:
+                self.peek_script = self.redis.register_script(LUA_PEEK_RATE_LIMITER)
+            
+            key = f"ratelimit:{key_id}"
+            rate = rpm / 60.0
+            now = time.time()
+            
+            result = await self.peek_script(keys=[key], args=[rpm, rate, now])
+            remaining_tokens_ms, retry_after = result
+            
+            return {
+                "limit": rpm,
+                "remaining": int(remaining_tokens_ms / 1000.0),
+                "reset": retry_after
+            }
+        except (redis.RedisError, ConnectionError) as e:
             return {"limit": rpm, "remaining": rpm, "reset": 0}
 
 rate_limiter = RateLimiter(settings.REDIS_URL)
