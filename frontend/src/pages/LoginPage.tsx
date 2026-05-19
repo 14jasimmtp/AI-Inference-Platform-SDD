@@ -131,7 +131,7 @@ export const LoginPage: React.FC = () => {
         setError('Failed to initialize Google Sign-In prompt.')
       }
     } else {
-      // Fallback to our gorgeous offline Mock SSO Page
+      // Fallback to our offline Mock SSO Page
       window.location.href = '/mock-google-login'
     }
   }
@@ -142,47 +142,41 @@ export const LoginPage: React.FC = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at top right, #1a202c, #0d1117)',
-      fontFamily: 'Inter, sans-serif',
-      color: '#f7fafc',
+      background: 'var(--color-bg-canvas)',
+      color: 'var(--color-text-primary)',
       padding: '20px',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      transition: 'var(--transition-smooth)'
     }}>
       <div style={{
         width: '100%',
         maxWidth: '440px',
-        background: 'rgba(22, 27, 34, 0.75)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '16px',
-        padding: '36px',
-        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.45)',
-        boxSizing: 'border-box'
+        background: 'var(--color-bg-card)',
+        border: `1px solid var(--color-border-subtle)`,
+        borderRadius: 'var(--border-radius-card)',
+        padding: '40px 36px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04)',
+        boxSizing: 'border-box',
+        transition: 'var(--transition-smooth)'
       }}>
         {/* Logo and Headings */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            fontSize: '32px',
-            marginBottom: '12px',
-            display: 'inline-block'
-          }}>⚡</div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#f7fafc', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <h1 className="claude-serif-title" style={{ fontSize: '28px', color: 'var(--color-text-primary)', margin: '0 0 8px 0' }}>
             AI Inference Platform
           </h1>
-          <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
-            Unified authentication portal
+          <p className="claude-sans-control" style={{ color: 'var(--color-text-secondary)', margin: 0, fontWeight: 400 }}>
+            Sign in or create an account
           </p>
         </div>
 
         {/* Message Alerts */}
         {error && (
-          <div style={{
+          <div className="claude-sans-control" style={{
             background: 'rgba(239, 68, 68, 0.1)',
             border: '1px solid rgba(239, 68, 68, 0.2)',
             borderRadius: '8px',
-            color: '#f87171',
+            color: '#ef4444',
             padding: '12px 16px',
-            fontSize: '13px',
             marginBottom: '20px',
             display: 'flex',
             justifyContent: 'space-between',
@@ -190,18 +184,17 @@ export const LoginPage: React.FC = () => {
             boxSizing: 'border-box'
           }}>
             <span>{error}</span>
-            <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+            <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>✕</button>
           </div>
         )}
 
         {successMsg && (
-          <div style={{
+          <div className="claude-sans-control" style={{
             background: 'rgba(16, 185, 129, 0.1)',
             border: '1px solid rgba(16, 185, 129, 0.2)',
             borderRadius: '8px',
-            color: '#34d399',
+            color: '#10b981',
             padding: '14px 18px',
-            fontSize: '13px',
             lineHeight: '1.5',
             marginBottom: '24px',
             textAlign: 'left',
@@ -214,25 +207,23 @@ export const LoginPage: React.FC = () => {
         {/* Dynamic Form Wizard */}
         <form onSubmit={step === 'email' ? handleEmailSubmit : handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {step === 'email' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#cbd5e1' }}>Email address</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Email address</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@acme.com"
+                placeholder="you@example.com"
+                className="claude-sans-control claude-focus-ring"
                 style={{
-                  background: '#161b22',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'transparent',
+                  border: '1px solid var(--color-border-subtle)',
                   borderRadius: '8px',
                   padding: '12px 14px',
-                  fontSize: '14px',
-                  color: '#f3f4f6',
-                  outline: 'none',
+                  color: 'var(--color-text-primary)',
                   boxSizing: 'border-box',
                   width: '100%',
-                  transition: 'border-color 0.2s'
                 }}
               />
             </div>
@@ -240,46 +231,44 @@ export const LoginPage: React.FC = () => {
 
           {step === 'password-signup' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ fontSize: '13px', color: '#60a5fa', background: 'rgba(96, 165, 250, 0.08)', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(96, 165, 250, 0.15)', boxSizing: 'border-box' }}>
+              <div className="claude-sans-control" style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.08)', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.15)', boxSizing: 'border-box' }}>
                 Email not registered. Proceed to set up a new account.
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 500, color: '#cbd5e1' }}>Full Name</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Full Name</label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Muhamed Jasim"
+                  className="claude-sans-control claude-focus-ring"
                   style={{
-                    background: '#161b22',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-subtle)',
                     borderRadius: '8px',
                     padding: '12px 14px',
-                    fontSize: '14px',
-                    color: '#f3f4f6',
-                    outline: 'none',
+                    color: 'var(--color-text-primary)',
                     boxSizing: 'border-box',
                     width: '100%',
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 500, color: '#cbd5e1' }}>Choose Password</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Choose Password</label>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimum 8 characters"
+                  className="claude-sans-control claude-focus-ring"
                   style={{
-                    background: '#161b22',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-subtle)',
                     borderRadius: '8px',
                     padding: '12px 14px',
-                    fontSize: '14px',
-                    color: '#f3f4f6',
-                    outline: 'none',
+                    color: 'var(--color-text-primary)',
                     boxSizing: 'border-box',
                     width: '100%',
                   }}
@@ -290,13 +279,13 @@ export const LoginPage: React.FC = () => {
 
           {step === 'password-login' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ fontSize: '13px', color: '#34d399', background: 'rgba(52, 211, 153, 0.08)', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(52, 211, 153, 0.15)', boxSizing: 'border-box' }}>
+              <div className="claude-sans-control" style={{ color: 'var(--color-text-primary)', background: 'var(--color-bg-canvas)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--color-border-subtle)', boxSizing: 'border-box' }}>
                 Welcome back! Please enter your password.
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 500, color: '#cbd5e1' }}>Password</label>
-                  <button type="button" onClick={handleForgotPassword} style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+                  <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Password</label>
+                  <button type="button" className="claude-sans-control" onClick={handleForgotPassword} style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', padding: 0 }}>
                     Forgot password?
                   </button>
                 </div>
@@ -306,14 +295,13 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  className="claude-sans-control claude-focus-ring"
                   style={{
-                    background: '#161b22',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-subtle)',
                     borderRadius: '8px',
                     padding: '12px 14px',
-                    fontSize: '14px',
-                    color: '#f3f4f6',
-                    outline: 'none',
+                    color: 'var(--color-text-primary)',
                     boxSizing: 'border-box',
                     width: '100%',
                   }}
@@ -326,6 +314,7 @@ export const LoginPage: React.FC = () => {
             {step !== 'email' && (
               <button
                 type="button"
+                className="claude-sans-control"
                 onClick={() => {
                   setStep('email')
                   setPassword('')
@@ -336,10 +325,8 @@ export const LoginPage: React.FC = () => {
                   padding: '12px 16px',
                   borderRadius: '8px',
                   background: 'transparent',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: '#cbd5e1',
-                  fontWeight: 500,
-                  fontSize: '14px',
+                  border: '1px solid var(--color-border-subtle)',
+                  color: 'var(--color-text-primary)',
                   cursor: 'pointer',
                   boxSizing: 'border-box'
                 }}
@@ -350,25 +337,34 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
+              className="claude-sans-control"
               style={{
                 flex: 1,
                 padding: '12px',
                 borderRadius: '8px',
-                background: '#3b82f6',
+                background: 'var(--color-text-primary)',
                 border: 'none',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '14px',
+                color: 'var(--color-bg-canvas)',
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-                transition: 'all 0.2s',
+                transition: 'var(--transition-smooth)',
                 display: 'flex',
                 alignItems: 'center',
                 boxSizing: 'border-box',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                opacity: loading ? 0.7 : 1
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'scale(1.01)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
             >
               {loading ? 'Processing...' : step === 'email' ? 'Continue' : step === 'password-login' ? 'Sign In' : 'Create Account'}
             </button>
@@ -378,10 +374,10 @@ export const LoginPage: React.FC = () => {
         {/* Divider */}
         {step === 'email' && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', gap: '12px' }}>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.08)' }}></div>
-              <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 500 }}>OR</span>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.08)' }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', margin: '28px 0', gap: '12px' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border-subtle)' }}></div>
+              <span className="claude-sans-control" style={{ fontSize: '12px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>OR</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border-subtle)' }}></div>
             </div>
 
             {/* Google SSO Brand Button */}

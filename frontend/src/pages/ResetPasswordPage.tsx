@@ -53,23 +53,23 @@ export const ResetPasswordPage: React.FC = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at top right, #1a202c, #0d1117)',
-      fontFamily: 'Inter, sans-serif',
-      color: '#f7fafc',
+      background: 'var(--color-bg-canvas)',
+      color: 'var(--color-text-primary)',
       padding: '20px',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      transition: 'var(--transition-smooth)'
     }}>
       <div style={{
         width: '100%',
         maxWidth: '440px',
-        background: 'rgba(22, 27, 34, 0.75)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '16px',
-        padding: '36px',
-        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.45)',
+        background: 'var(--color-bg-card)',
+        border: `1px solid var(--color-border-subtle)`,
+        borderRadius: 'var(--border-radius-card)',
+        padding: '40px 36px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04)',
         boxSizing: 'border-box',
-        textAlign: success ? 'center' : 'left'
+        textAlign: success ? 'center' : 'left',
+        transition: 'var(--transition-smooth)'
       }}>
         {success ? (
           <div>
@@ -79,40 +79,39 @@ export const ResetPasswordPage: React.FC = () => {
               marginBottom: '20px',
               textAlign: 'center'
             }}>✓</div>
-            <h3 style={{ fontSize: '22px', fontWeight: 600, color: '#f7fafc', margin: '0 0 12px 0', textAlign: 'center' }}>
+            <h3 className="claude-serif-title" style={{ fontSize: '24px', color: 'var(--color-text-primary)', margin: '0 0 12px 0', textAlign: 'center' }}>
               Password Reset Complete
             </h3>
-            <p style={{ fontSize: '14px', color: '#34d399', margin: '0 0 24px 0', textAlign: 'center' }}>
+            <p className="claude-sans-control" style={{ color: '#10b981', margin: '0 0 24px 0', textAlign: 'center' }}>
               Your credentials have been updated successfully.
             </p>
-            <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0, textAlign: 'center' }}>
+            <p className="claude-sans-control" style={{ color: 'var(--color-text-secondary)', margin: 0, textAlign: 'center' }}>
               Redirecting you to the login screen...
             </p>
           </div>
         ) : (
           <div>
-            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '36px' }}>
               <div style={{
                 fontSize: '32px',
                 marginBottom: '12px',
                 display: 'inline-block'
               }}>🔒</div>
-              <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#f7fafc', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
+              <h1 className="claude-serif-title" style={{ fontSize: '28px', color: 'var(--color-text-primary)', margin: '0 0 8px 0' }}>
                 Reset Your Password
               </h1>
-              <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
+              <p className="claude-sans-control" style={{ color: 'var(--color-text-secondary)', margin: 0, fontWeight: 400 }}>
                 Please specify a new secure password
               </p>
             </div>
 
             {error && (
-              <div style={{
+              <div className="claude-sans-control" style={{
                 background: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.2)',
                 borderRadius: '8px',
-                color: '#f87171',
+                color: '#ef4444',
                 padding: '12px 16px',
-                fontSize: '13px',
                 marginBottom: '20px',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -120,49 +119,47 @@ export const ResetPasswordPage: React.FC = () => {
                 boxSizing: 'border-box'
               }}>
                 <span>{error}</span>
-                <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+                <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>✕</button>
               </div>
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 500, color: '#cbd5e1' }}>New Password</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>New Password</label>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimum 8 characters"
+                  className="claude-sans-control claude-focus-ring"
                   style={{
-                    background: '#161b22',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-subtle)',
                     borderRadius: '8px',
                     padding: '12px 14px',
-                    fontSize: '14px',
-                    color: '#f3f4f6',
-                    outline: 'none',
+                    color: 'var(--color-text-primary)',
                     boxSizing: 'border-box',
                     width: '100%',
                   }}
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 500, color: '#cbd5e1' }}>Confirm Password</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Confirm Password</label>
                 <input
                   type="password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
+                  className="claude-sans-control claude-focus-ring"
                   style={{
-                    background: '#161b22',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-subtle)',
                     borderRadius: '8px',
                     padding: '12px 14px',
-                    fontSize: '14px',
-                    color: '#f3f4f6',
-                    outline: 'none',
+                    color: 'var(--color-text-primary)',
                     boxSizing: 'border-box',
                     width: '100%',
                   }}
@@ -172,26 +169,35 @@ export const ResetPasswordPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
+                className="claude-sans-control"
                 style={{
                   width: '100%',
+                  marginTop: '10px',
                   padding: '12px',
                   borderRadius: '8px',
-                  background: '#ef4444',
+                  background: 'var(--color-text-primary)',
                   border: 'none',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '14px',
+                  color: 'var(--color-bg-canvas)',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-                  transition: 'all 0.2s',
+                  transition: 'var(--transition-smooth)',
                   display: 'flex',
                   alignItems: 'center',
                   boxSizing: 'border-box',
                   justifyContent: 'center',
-                  marginTop: '10px'
+                  opacity: loading ? 0.7 : 1
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#dc2626'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#ef4444'}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1.01)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }
+                }}
               >
                 {loading ? 'Updating Password...' : 'Save New Password'}
               </button>

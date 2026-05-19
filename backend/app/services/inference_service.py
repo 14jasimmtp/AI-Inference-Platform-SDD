@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class InferenceService:
     def __init__(self):
         self.ollama_url = settings.OLLAMA_BASE_URL
-        self.client = httpx.AsyncClient(timeout=120.0)
+        self.client = httpx.AsyncClient(timeout=300.0)
 
     async def list_models(self) -> ModelListResponse:
         try:

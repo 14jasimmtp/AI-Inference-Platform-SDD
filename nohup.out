@@ -1,0 +1,22 @@
+[*] Listening on 0.0.0.0:11435 and forwarding to 127.0.0.1:11434
+Traceback (most recent call last):
+  File "/mnt/c/Users/MuhamedJasim/AI-Inference-Platform-SDD/ollama_proxy.py", line 47, in <module>
+    main()
+  File "/mnt/c/Users/MuhamedJasim/AI-Inference-Platform-SDD/ollama_proxy.py", line 43, in main
+    client_socket, addr = server.accept()
+                          ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socket.py", line 295, in accept
+    fd, addr = self._accept()
+               ^^^^^^^^^^^^^^
+KeyboardInterrupt
+Exception ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+Traceback (most recent call last):
+  File "/mnt/c/Users/MuhamedJasim/AI-Inference-Platform-SDD/ollama_proxy.py", line 47, in <module>
+    main()
+  File "/mnt/c/Users/MuhamedJasim/AI-Inference-Platform-SDD/ollama_proxy.py", line 37, in main
+    server.bind((listen_host, listen_port))
+OSError: [Errno 98] Address already in use

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import { useTheme } from '../hooks/useTheme'
 import { orgsApi, usersApi, apiKeysAdminApi } from '../api/admin'
 import { ArrowLeft, Plus, Trash2, RefreshCw } from 'lucide-react'
 
 // Basic layout for Admin
 export const AdminPage: React.FC = () => {
   const { user, logout } = useAuthStore()
+  const { isDark, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'orgs' | 'users' | 'keys'>('keys')
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
@@ -26,63 +28,280 @@ export const AdminPage: React.FC = () => {
   }, [userLevel])
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
+    <div className="claude-sans-control" style={{ 
+      minHeight: '100vh', 
+      background: 'var(--color-bg-canvas)', 
+      color: 'var(--color-text-primary)', 
+      display: 'flex', 
+      flexDirection: 'column',
+      transition: 'var(--transition-smooth)'
+    }}>
       {/* Header */}
-      <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-[#111]">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/chat')} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+      <header style={{ 
+        height: '64px', 
+        borderBottom: '1px solid var(--color-border-subtle)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        padding: '0 24px', 
+        background: 'var(--color-bg-card)',
+        transition: 'var(--transition-smooth)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button 
+            onClick={() => navigate('/chat')} 
+            className="claude-focus-ring"
+            style={{ 
+              padding: '8px', background: 'transparent', border: '1px solid transparent', borderRadius: '50%',
+              cursor: 'pointer', color: 'var(--color-text-secondary)', transition: 'var(--transition-smooth)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--color-accent-amber-glow)'
+              e.currentTarget.style.color = 'var(--color-accent-amber)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = 'var(--color-text-secondary)'
+            }}
+          >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-semibold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            {userLevel >= 4 ? 'Admin Console' : 'Workspace Settings'} <span className="text-xs text-gray-600 font-mono ml-2">v1.1-secure</span>
+          <h1 className="claude-serif-title" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
+            {userLevel >= 4 ? 'Admin Console' : 'Workspace Settings'} 
+            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace', marginLeft: '8px' }}>v1.1-secure</span>
           </h1>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-400">
-            <span className="font-medium text-gray-300">{user?.full_name}</span> ({user?.role})
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{user?.full_name}</span> ({user?.role})
           </div>
-          <button onClick={logout} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm transition-colors">
+          
+          <button 
+            onClick={toggleTheme} 
+            className="claude-focus-ring"
+            style={{ 
+              padding: '8px', border: '1px solid var(--color-border-subtle)', background: 'transparent', cursor: 'pointer', 
+              color: 'var(--color-text-secondary)', borderRadius: '8px', transition: 'var(--transition-smooth)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-text-primary)'
+              e.currentTarget.style.color = 'var(--color-text-primary)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-border-subtle)'
+              e.currentTarget.style.color = 'var(--color-text-secondary)'
+            }}
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+
+          <button 
+            onClick={logout} 
+            className="claude-focus-ring"
+            style={{ 
+              padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#ef4444', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 500,
+              cursor: 'pointer', transition: 'var(--transition-smooth)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
+            }}
+          >
             Logout
           </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Sidebar */}
-        <div className="w-64 border-r border-white/10 p-4 space-y-2 bg-[#111]/50">
+        <div style={{ 
+          width: '260px', borderRight: '1px solid var(--color-border-subtle)', padding: '24px 16px', 
+          display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--color-bg-canvas)' 
+        }}>
           <button
             onClick={() => setActiveTab('orgs')}
-            className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${activeTab === 'orgs' ? 'bg-blue-500/20 text-blue-400 font-medium' : 'hover:bg-white/5 text-gray-400'}`}
+            className="claude-focus-ring"
+            style={{
+              width: '100%', textAlign: 'left', padding: '10px 16px', borderRadius: '8px',
+              fontSize: '0.9rem', fontWeight: activeTab === 'orgs' ? 600 : 500,
+              background: activeTab === 'orgs' ? 'var(--color-accent-amber-glow)' : 'transparent',
+              color: activeTab === 'orgs' ? 'var(--color-accent-amber)' : 'var(--color-text-secondary)',
+              border: 'none', cursor: 'pointer', transition: 'var(--transition-smooth)'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'orgs') {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.03)'
+                e.currentTarget.style.color = 'var(--color-text-primary)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'orgs') {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = 'var(--color-text-secondary)'
+              }
+            }}
           >
             {userLevel >= 4 ? 'Organizations' : 'My Organization'}
           </button>
           {userLevel >= 2 && (
             <button
               onClick={() => setActiveTab('users')}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${activeTab === 'users' ? 'bg-blue-500/20 text-blue-400 font-medium' : 'hover:bg-white/5 text-gray-400'}`}
+              className="claude-focus-ring"
+              style={{
+                width: '100%', textAlign: 'left', padding: '10px 16px', borderRadius: '8px',
+                fontSize: '0.9rem', fontWeight: activeTab === 'users' ? 600 : 500,
+                background: activeTab === 'users' ? 'var(--color-accent-amber-glow)' : 'transparent',
+                color: activeTab === 'users' ? 'var(--color-accent-amber)' : 'var(--color-text-secondary)',
+                border: 'none', cursor: 'pointer', transition: 'var(--transition-smooth)'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'users') {
+                  e.currentTarget.style.background = 'rgba(0,0,0,0.03)'
+                  e.currentTarget.style.color = 'var(--color-text-primary)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'users') {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = 'var(--color-text-secondary)'
+                }
+              }}
             >
               Users & Roles
             </button>
           )}
           <button
             onClick={() => setActiveTab('keys')}
-            className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${activeTab === 'keys' ? 'bg-blue-500/20 text-blue-400 font-medium' : 'hover:bg-white/5 text-gray-400'}`}
+            className="claude-focus-ring"
+            style={{
+              width: '100%', textAlign: 'left', padding: '10px 16px', borderRadius: '8px',
+              fontSize: '0.9rem', fontWeight: activeTab === 'keys' ? 600 : 500,
+              background: activeTab === 'keys' ? 'var(--color-accent-amber-glow)' : 'transparent',
+              color: activeTab === 'keys' ? 'var(--color-accent-amber)' : 'var(--color-text-secondary)',
+              border: 'none', cursor: 'pointer', transition: 'var(--transition-smooth)'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'keys') {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.03)'
+                e.currentTarget.style.color = 'var(--color-text-primary)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'keys') {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = 'var(--color-text-secondary)'
+              }
+            }}
           >
             API Keys
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-8 overflow-y-auto">
-          {activeTab === 'orgs' && <OrgsTab userLevel={userLevel} setActiveTab={setActiveTab} onSelect={(id) => { setSelectedOrgId(id); setActiveTab('users'); }} />}
-          {activeTab === 'users' && userLevel >= 2 && <UsersTab userOrgId={selectedOrgId || user?.org_id || ''} userLevel={userLevel} />}
-          {activeTab === 'keys' && <ApiKeysTab />}
+        <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
+          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            {activeTab === 'orgs' && <OrgsTab userLevel={userLevel} setActiveTab={setActiveTab} onSelect={(id) => { setSelectedOrgId(id); setActiveTab('users'); }} />}
+            {activeTab === 'users' && userLevel >= 2 && <UsersTab userOrgId={selectedOrgId || user?.org_id || ''} userLevel={userLevel} />}
+            {activeTab === 'keys' && <ApiKeysTab />}
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
+// Reusable styling components for admin sections
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <h2 className="claude-serif-title" style={{ fontSize: '1.75rem', color: 'var(--color-text-primary)', marginBottom: '24px' }}>
+    {children}
+  </h2>
+)
+
+const Card = ({ children, style = {} }: { children: React.ReactNode, style?: React.CSSProperties }) => (
+  <div style={{ 
+    background: 'var(--color-bg-card)', 
+    border: '1px solid var(--color-border-subtle)', 
+    borderRadius: '16px', 
+    padding: '24px', 
+    boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
+    transition: 'var(--transition-smooth)',
+    ...style 
+  }}>
+    {children}
+  </div>
+)
+
+const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <input 
+    {...props} 
+    className={`claude-focus-ring ${props.className || ''}`}
+    style={{ 
+      width: '100%', 
+      background: 'var(--color-bg-canvas)', 
+      border: '1px solid var(--color-border-subtle)', 
+      borderRadius: '8px', 
+      padding: '10px 14px', 
+      color: 'var(--color-text-primary)', 
+      fontSize: '0.9rem',
+      transition: 'var(--transition-smooth)',
+      ...props.style
+    }} 
+  />
+)
+
+const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
+  <select 
+    {...props} 
+    className={`claude-focus-ring ${props.className || ''}`}
+    style={{ 
+      background: 'var(--color-bg-canvas)', 
+      border: '1px solid var(--color-border-subtle)', 
+      borderRadius: '8px', 
+      padding: '10px 14px', 
+      color: 'var(--color-text-primary)', 
+      fontSize: '0.9rem',
+      transition: 'var(--transition-smooth)',
+      ...props.style
+    }} 
+  />
+)
+
+const PrimaryButton = ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button 
+    {...props} 
+    className={`claude-focus-ring ${props.className || ''}`}
+    style={{ 
+      background: 'var(--color-accent-amber)', 
+      color: '#fff', 
+      border: 'none', 
+      borderRadius: '8px', 
+      padding: '10px 20px', 
+      fontWeight: 600, 
+      fontSize: '0.9rem',
+      cursor: 'pointer', 
+      transition: 'var(--transition-smooth)',
+      display: 'flex', alignItems: 'center', gap: '8px',
+      ...props.style
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = '#B45309'
+      e.currentTarget.style.transform = 'translateY(-1px)'
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = 'var(--color-accent-amber)'
+      e.currentTarget.style.transform = 'translateY(0)'
+    }}
+  >
+    {children}
+  </button>
+)
 
 // Organizations Tab
 const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string) => void, userLevel: number, setActiveTab: (tab: any) => void }) => {
@@ -124,8 +343,9 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+      <div style={{ width: '30px', height: '30px', border: '3px solid var(--color-border-subtle)', borderTopColor: 'var(--color-accent-amber)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </div>
   )
 
@@ -133,144 +353,142 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
 
   if (userLevel < 4 && !user?.org_id) {
     return (
-      <div className="space-y-6 max-w-2xl mx-auto py-12">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl font-bold">Get Started</h2>
-          <p className="text-gray-400">You are not currently in an organization. Create your own to start working with others and managing API keys.</p>
+      <div style={{ maxWidth: '600px', margin: '40px auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 className="claude-serif-title" style={{ fontSize: '2rem', marginBottom: '12px' }}>Get Started</h2>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '1rem', lineHeight: '1.6' }}>You are not currently in an organization. Create your own to start working with others and managing API keys.</p>
         </div>
         
-        <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-white/10 shadow-2xl">
-          <h3 className="text-xl font-medium mb-6">Create Your Organization</h3>
-          <form onSubmit={handleCreate} className="space-y-4">
+        <Card style={{ padding: '40px' }}>
+          <h3 className="claude-serif-title" style={{ fontSize: '1.25rem', marginBottom: '24px' }}>Create Your Organization</h3>
+          <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Organization Name</label>
-              <input
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Organization Name</label>
+              <Input
                 type="text"
                 placeholder="e.g. My Awesome Team"
                 value={newOrgName}
                 onChange={(e) => setNewOrgName(e.target.value)}
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">URL Slug</label>
-              <input
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>URL Slug</label>
+              <Input
                 type="text"
                 placeholder="e.g. my-team"
                 value={newOrgSlug}
                 onChange={(e) => setNewOrgSlug(e.target.value)}
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all"
                 required
                 pattern="[a-z0-9-]+"
               />
             </div>
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+            <PrimaryButton type="submit" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '14px' }}>
               <Plus size={20} /> Create Organization
-            </button>
+            </PrimaryButton>
           </form>
-        </div>
+        </Card>
       </div>
     )
   }
 
   if (userLevel < 4 && myOrg) {
     return (
-      <div className="space-y-8">
-        <div className="flex justify-between items-end">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <h2 className="text-3xl font-bold mb-1">My Organization</h2>
-            <p className="text-gray-400">Manage your workspace and team members.</p>
+            <SectionTitle>My Organization</SectionTitle>
+            <p style={{ color: 'var(--color-text-secondary)', marginTop: '-16px' }}>Manage your workspace and team members.</p>
           </div>
-          <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-lg text-blue-400 text-sm font-medium">
-            Role: {user?.role}
+          <div style={{ background: 'var(--color-accent-amber-glow)', border: '1px solid var(--color-accent-amber-glow)', padding: '6px 12px', borderRadius: '8px', color: 'var(--color-accent-amber)', fontSize: '0.85rem', fontWeight: 600 }}>
+            Role: <span style={{ textTransform: 'capitalize' }}>{user?.role}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-white/10">
-            <h3 className="text-lg font-medium text-gray-400 mb-2">Organization Details</h3>
-            <div className="space-y-4">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          <Card>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Organization Details</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <span className="text-sm text-gray-500 block">Name</span>
-                <span className="text-xl font-semibold">{myOrg.name}</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Name</span>
+                <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{myOrg.name}</span>
               </div>
               <div>
-                <span className="text-sm text-gray-500 block">Slug</span>
-                <span className="text-lg font-mono text-gray-300">{myOrg.slug}</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Slug</span>
+                <span style={{ fontSize: '1rem', fontFamily: 'monospace', color: 'var(--color-text-primary)' }}>{myOrg.slug}</span>
               </div>
             </div>
-          </div>
+          </Card>
           
-          <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-white/10 flex flex-col justify-center items-center text-center">
-            <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-400 mb-4">
+          <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ width: '64px', height: '64px', background: 'var(--color-accent-amber-glow)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-amber)', marginBottom: '16px' }}>
               <RefreshCw size={32} />
             </div>
-            <h3 className="text-lg font-medium mb-2">Team Management</h3>
-            <p className="text-sm text-gray-400 mb-6">Go to the Users & Roles tab to invite teammates to {myOrg.name}.</p>
-            <button 
-              onClick={() => setActiveTab('users')}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-all"
-            >
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px' }}>Team Management</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '24px' }}>Go to the Users & Roles tab to invite teammates to {myOrg.name}.</p>
+            <PrimaryButton onClick={() => setActiveTab('users')}>
               Manage Users
-            </button>
-          </div>
+            </PrimaryButton>
+          </Card>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold">Organizations</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <SectionTitle>Organizations</SectionTitle>
       
-      <div className="bg-[#1a1a1a] p-6 rounded-xl border border-white/10">
-        <h3 className="text-lg font-medium mb-4">Create New Organization</h3>
-        <form onSubmit={handleCreate} className="flex gap-4">
-          <input
+      <Card>
+        <h3 className="claude-serif-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Create New Organization</h3>
+        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <Input
             type="text"
             placeholder="Name (e.g. Acme Corp)"
             value={newOrgName}
             onChange={(e) => setNewOrgName(e.target.value)}
-            className="flex-1 bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
             required
+            style={{ flex: 1 }}
           />
-          <input
+          <Input
             type="text"
             placeholder="Slug (e.g. acme-corp)"
             value={newOrgSlug}
             onChange={(e) => setNewOrgSlug(e.target.value)}
-            className="flex-1 bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
             required
             pattern="[a-z0-9-]+"
+            style={{ flex: 1 }}
           />
-          <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+          <PrimaryButton type="submit">
             <Plus size={18} /> Create
-          </button>
+          </PrimaryButton>
         </form>
-      </div>
+      </Card>
 
-      <div className="bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#222] border-b border-white/10">
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: 'var(--color-bg-canvas)', borderBottom: '1px solid var(--color-border-subtle)' }}>
             <tr>
-              <th className="px-6 py-4 font-medium text-gray-400">Name</th>
-              <th className="px-6 py-4 font-medium text-gray-400">Slug</th>
-              <th className="px-6 py-4 font-medium text-gray-400">Created</th>
-              <th className="px-6 py-4 font-medium text-gray-400 text-right">Actions</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Name</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Slug</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Created</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody>
             {orgs.map(org => (
-              <tr key={org.org_id} className="hover:bg-white/5 transition-colors">
-                <td className="px-6 py-4 font-medium">{org.name}</td>
-                <td className="px-6 py-4 text-gray-400">{org.slug}</td>
-                <td className="px-6 py-4 text-gray-400">{new Date(org.created_at).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
+              <tr key={org.org_id} style={{ borderBottom: '1px solid var(--color-border-subtle)', transition: 'var(--transition-smooth)' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.01)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                <td style={{ padding: '16px 24px', fontWeight: 500 }}>{org.name}</td>
+                <td style={{ padding: '16px 24px', color: 'var(--color-text-secondary)' }}>{org.slug}</td>
+                <td style={{ padding: '16px 24px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>{new Date(org.created_at).toLocaleDateString()}</td>
+                <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                     <button 
                       onClick={() => onSelect(org.org_id)}
-                      className="px-3 py-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded text-xs transition-colors"
+                      className="claude-focus-ring"
+                      style={{ padding: '6px 12px', background: 'var(--color-accent-amber-glow)', color: 'var(--color-accent-amber)', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(217, 119, 6, 0.25)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'var(--color-accent-amber-glow)'}
                     >
                       Manage
                     </button>
@@ -287,7 +505,10 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
                             }
                           }
                         }}
-                        className="px-3 py-1 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded text-xs transition-colors"
+                        className="claude-focus-ring"
+                        style={{ padding: '6px 12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
                       >
                         Join
                       </button>
@@ -303,7 +524,10 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
                           }
                         }
                       }}
-                      className="p-1 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                      className="claude-focus-ring"
+                      style={{ padding: '6px 10px', background: 'transparent', color: '#ef4444', border: '1px solid transparent', borderRadius: '6px', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -313,7 +537,7 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   )
 }
@@ -356,76 +580,76 @@ const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: numb
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+      <div style={{ width: '30px', height: '30px', border: '3px solid var(--color-border-subtle)', borderTopColor: 'var(--color-accent-amber)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </div>
   )
 
   if (!userOrgId) return (
-    <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-xl text-blue-400">
-      <h2 className="text-xl font-semibold mb-2">No Organization Selected</h2>
-      <p>Please create or join an organization to manage users and roles.</p>
+    <div style={{ background: 'var(--color-accent-amber-glow)', border: '1px solid rgba(217,119,6,0.3)', padding: '24px', borderRadius: '16px', color: 'var(--color-accent-amber)' }}>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '8px' }}>No Organization Selected</h2>
+      <p style={{ color: 'var(--color-text-primary)', opacity: 0.8 }}>Please create or join an organization to manage users and roles.</p>
     </div>
   )
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold">Users & Roles</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <SectionTitle>Users & Roles</SectionTitle>
       
       {userLevel >= 3 && (
-        <div className="bg-[#1a1a1a] p-6 rounded-xl border border-white/10">
-          <h3 className="text-lg font-medium mb-4">Invite User</h3>
-          <form onSubmit={handleInvite} className="flex gap-4">
-            <input
+        <Card>
+          <h3 className="claude-serif-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Invite User</h3>
+          <form onSubmit={handleInvite} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <Input
               type="email"
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               required
+              style={{ flex: 1 }}
             />
-            <select
+            <Select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
             >
               <option value="user">User</option>
               <option value="team_lead">Team Lead</option>
               <option value="org_admin">Org Admin</option>
-            </select>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+            </Select>
+            <PrimaryButton type="submit">
               <Plus size={18} /> Invite
-            </button>
+            </PrimaryButton>
           </form>
-        </div>
+        </Card>
       )}
 
-      <div className="bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#222] border-b border-white/10">
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: 'var(--color-bg-canvas)', borderBottom: '1px solid var(--color-border-subtle)' }}>
             <tr>
-              <th className="px-6 py-4 font-medium text-gray-400">Name</th>
-              <th className="px-6 py-4 font-medium text-gray-400">Email</th>
-              <th className="px-6 py-4 font-medium text-gray-400">Role</th>
-              {userLevel >= 3 && <th className="px-6 py-4 font-medium text-gray-400 text-right">Actions</th>}
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Name</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Email</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Role</th>
+              {userLevel >= 3 && <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody>
             {users.map(u => (
-              <tr key={u.user_id} className="hover:bg-white/5 transition-colors">
-                <td className="px-6 py-4 font-medium">{u.full_name}</td>
-                <td className="px-6 py-4 text-gray-400">{u.email}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    u.role === 'org_admin' ? 'bg-purple-500/20 text-purple-400' :
-                    u.role === 'team_lead' ? 'bg-blue-500/20 text-blue-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {u.role}
+              <tr key={u.user_id} style={{ borderBottom: '1px solid var(--color-border-subtle)', transition: 'var(--transition-smooth)' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.01)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                <td style={{ padding: '16px 24px', fontWeight: 500 }}>{u.full_name}</td>
+                <td style={{ padding: '16px 24px', color: 'var(--color-text-secondary)' }}>{u.email}</td>
+                <td style={{ padding: '16px 24px' }}>
+                  <span style={{ 
+                    padding: '4px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
+                    background: u.role === 'org_admin' ? 'rgba(139, 92, 246, 0.1)' : u.role === 'team_lead' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-border-subtle)',
+                    color: u.role === 'org_admin' ? '#8b5cf6' : u.role === 'team_lead' ? '#3b82f6' : 'var(--color-text-secondary)'
+                  }}>
+                    {u.role.replace('_', ' ')}
                   </span>
                 </td>
                 {userLevel >= 3 && (
-                  <td className="px-6 py-4 text-right">
+                  <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                     <button 
                       onClick={async () => {
                         if (confirm('Remove user?')) {
@@ -437,7 +661,11 @@ const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: numb
                           }
                         }
                       }}
-                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="claude-focus-ring"
+                      style={{ padding: '8px', background: 'transparent', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      title="Remove User"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -447,7 +675,7 @@ const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: numb
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   )
 }
@@ -497,69 +725,88 @@ const ApiKeysTab = () => {
     }
   }
 
-  if (loading) return <div>Loading...</div>
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+      <div style={{ width: '30px', height: '30px', border: '3px solid var(--color-border-subtle)', borderTopColor: 'var(--color-accent-amber)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold">API Keys</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <SectionTitle>API Keys</SectionTitle>
       
       {newKeyData && (
-        <div className="bg-green-500/10 border border-green-500/20 p-6 rounded-xl">
-          <h3 className="text-green-400 font-medium mb-2">Save this key now! It will never be shown again.</h3>
-          <div className="bg-black/50 p-4 rounded-lg font-mono text-sm break-all select-all text-white">
+        <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '24px', borderRadius: '16px' }}>
+          <h3 style={{ color: '#10b981', fontWeight: 600, marginBottom: '12px' }}>Save this key now! It will never be shown again.</h3>
+          <div style={{ background: 'var(--color-bg-canvas)', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.9rem', wordBreak: 'break-all', userSelect: 'all', color: 'var(--color-text-primary)', border: '1px solid var(--color-border-subtle)' }}>
             {newKeyData.api_key}
           </div>
-          <button onClick={() => setNewKeyData(null)} className="mt-4 text-sm text-green-400 hover:text-green-300">
+          <button 
+            onClick={() => setNewKeyData(null)} 
+            className="claude-focus-ring"
+            style={{ marginTop: '16px', background: 'transparent', border: 'none', fontSize: '0.85rem', color: '#10b981', cursor: 'pointer', fontWeight: 600 }}
+            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+          >
             I have saved it
           </button>
         </div>
       )}
 
-      <div className="bg-[#1a1a1a] p-6 rounded-xl border border-white/10">
-        <h3 className="text-lg font-medium mb-4">Create New API Key</h3>
-        <form onSubmit={handleCreate} className="flex gap-4">
-          <input
+      <Card>
+        <h3 className="claude-serif-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Create New API Key</h3>
+        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <Input
             type="text"
             placeholder="Key Name (e.g. Production Web)"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1 bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
             required
+            style={{ flex: 1 }}
           />
-          <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+          <PrimaryButton type="submit">
             <Plus size={18} /> Generate Key
-          </button>
+          </PrimaryButton>
         </form>
-      </div>
+      </Card>
 
-      <div className="bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#222] border-b border-white/10">
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: 'var(--color-bg-canvas)', borderBottom: '1px solid var(--color-border-subtle)' }}>
             <tr>
-              <th className="px-6 py-4 font-medium text-gray-400">Name</th>
-              <th className="px-6 py-4 font-medium text-gray-400">Prefix</th>
-              <th className="px-6 py-4 font-medium text-gray-400">Created</th>
-              <th className="px-6 py-4 font-medium text-gray-400">Last Used</th>
-              <th className="px-6 py-4 font-medium text-gray-400 text-right">Actions</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Name</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Prefix</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Created</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Last Used</th>
+              <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody>
             {keys.map(k => (
-              <tr key={k.key_id} className="hover:bg-white/5 transition-colors">
-                <td className="px-6 py-4 font-medium">{k.name}</td>
-                <td className="px-6 py-4 text-gray-400 font-mono text-sm">{k.prefix}...</td>
-                <td className="px-6 py-4 text-gray-400">
-                  {/* Fallback to display valid created date if 'created_at' does not exist yet */}
+              <tr key={k.key_id} style={{ borderBottom: '1px solid var(--color-border-subtle)', transition: 'var(--transition-smooth)' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.01)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                <td style={{ padding: '16px 24px', fontWeight: 500 }}>{k.name}</td>
+                <td style={{ padding: '16px 24px', color: 'var(--color-text-secondary)', fontFamily: 'monospace', fontSize: '0.85rem' }}>{k.prefix}...</td>
+                <td style={{ padding: '16px 24px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
                   {new Date(k.created_at || new Date()).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 text-gray-400">
+                <td style={{ padding: '16px 24px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
                   {k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'Never'}
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                     <button 
                       onClick={() => handleRotate(k.key_id)}
-                      className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      className="claude-focus-ring"
+                      style={{ padding: '8px', background: 'transparent', color: 'var(--color-text-secondary)', border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--color-bg-canvas)'
+                        e.currentTarget.style.color = 'var(--color-accent-amber)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = 'var(--color-text-secondary)'
+                      }}
                       title="Rotate Key"
                     >
                       <RefreshCw size={18} />
@@ -575,7 +822,14 @@ const ApiKeysTab = () => {
                           }
                         }
                       }}
-                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="claude-focus-ring"
+                      style={{ padding: '8px', background: 'transparent', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                      }}
                       title="Revoke Key"
                     >
                       <Trash2 size={18} />
@@ -586,7 +840,7 @@ const ApiKeysTab = () => {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   )
 }

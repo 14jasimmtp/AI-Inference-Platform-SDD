@@ -5,4 +5,5 @@ export type MessageRole = typeof ROLES[number]
 export interface ChatMessage {
   role: MessageRole
   content: string
+  timestamp?: number
 }

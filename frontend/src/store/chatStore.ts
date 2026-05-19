@@ -33,6 +33,7 @@ interface ChatState {
   // Messaging
   sendMessage: (content: string) => Promise<void>
   retryLastMessage: () => Promise<void>
+  editMessage: (index: number, newContent: string) => Promise<void>
 
   // Models
   setModel: (model: string) => void
@@ -132,7 +133,7 @@ export const useChatStore = create<ChatState>()(
           session = newSession
         }
 
-        const userMsg: ChatMessage = { role: 'user', content }
+        const userMsg: ChatMessage = { role: 'user', content, timestamp: Date.now() }
         const updatedMessages = [...session.messages, userMsg]
 
         const isFirstMessage = session.messages.length === 0
@@ -167,7 +168,7 @@ export const useChatStore = create<ChatState>()(
           },
           () => {
             const finalContent = get().streamingContent
-            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent }
+            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
             set((s) => {
               const userSessions = s.sessionsByUser[userId] || []
               return {
@@ -235,7 +236,78 @@ export const useChatStore = create<ChatState>()(
           },
           () => {
             const finalContent = get().streamingContent
-            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent }
+            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
+            set((s) => {
+              const userSessions = s.sessionsByUser[userId] || []
+              return {
+                sessionsByUser: {
+                  ...s.sessionsByUser,
+                  [userId]: userSessions.map((sess) =>
+                    sess.id === sessionId
+                      ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
+                      : sess
+                  ),
+                },
+                streamingContent: '',
+                isStreaming: false,
+              }
+            })
+          },
+          (err) => {
+            set({ error: err, isStreaming: false, streamingContent: '' })
+          }
+        )
+      },
+
+      editMessage: async (index: number, newContent: string) => {
+        if (get().isStreaming) return
+
+        const userId = getUserId()
+        const session = get().currentSession()
+        if (!session || index < 0 || index >= session.messages.length) return
+
+        // Truncate messages after index, and update message at index
+        const updatedMessages = session.messages.slice(0, index)
+        const userMsg: ChatMessage = { 
+          role: 'user', 
+          content: newContent, 
+          timestamp: session.messages[index].timestamp || Date.now() 
+        }
+        updatedMessages.push(userMsg)
+
+        const isFirstMessage = index === 0
+        const title = isFirstMessage
+          ? newContent.slice(0, 40) + (newContent.length > 40 ? '…' : '')
+          : session.title
+
+        set((s) => {
+          const userSessions = s.sessionsByUser[userId] || []
+          return {
+            sessionsByUser: {
+              ...s.sessionsByUser,
+              [userId]: userSessions.map((sess) =>
+                sess.id === session!.id
+                  ? { ...sess, messages: updatedMessages, title, updatedAt: Date.now() }
+                  : sess
+              ),
+            },
+            isStreaming: true,
+            streamingContent: '',
+            error: null,
+          }
+        })
+
+        const sessionId = session.id
+
+        await inferenceApi.streamChatCompletion(
+          get().model,
+          updatedMessages,
+          (chunk) => {
+            set((s) => ({ streamingContent: s.streamingContent + chunk }))
+          },
+          () => {
+            const finalContent = get().streamingContent
+            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
             set((s) => {
               const userSessions = s.sessionsByUser[userId] || []
               return {
