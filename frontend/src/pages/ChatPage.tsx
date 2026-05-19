@@ -522,8 +522,7 @@ export const ChatPage: React.FC = () => {
                       { label: 'Write', icon: '📝', prompt: 'Write a comprehensive guide on...' },
                       { label: 'Learn', icon: '🎓', prompt: 'Explain the concept of...' },
                       { label: 'Code', icon: '💻', prompt: 'Help me write code to...' },
-                      { label: 'Life stuff', icon: '☕', prompt: 'Plan a relaxing weekend itinerary for...' },
-                      { label: "Claude's choice", icon: '💡', prompt: 'Tell me something interesting about...' }
+                      { label: 'Life stuff', icon: '☕', prompt: 'Plan a relaxing weekend itinerary for...' }
                     ].map((chip) => (
                       <button
                         key={chip.label}
