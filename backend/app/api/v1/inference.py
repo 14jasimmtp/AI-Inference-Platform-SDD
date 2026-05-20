@@ -1,5 +1,6 @@
 import logging
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, Header
 from fastapi.responses import StreamingResponse
 from app.schemas.inference import ChatCompletionRequest, ChatCompletionResponse, ModelListResponse
 from app.services.inference_service import inference_service
@@ -23,13 +24,19 @@ async def list_models(
 async def chat_completions(
     body: ChatCompletionRequest,
     auth: tuple = Depends(get_api_key_user),
+    x_test_rate_limit_rpm: Optional[int] = Header(None, alias="x-test-rate-limit-rpm")
 ):
     """Chat completions endpoint — supports streaming via SSE."""
     user, api_key = auth
 
     # Apply rate limiting
-    rpm = api_key.rate_limit_rpm if api_key else settings.DEFAULT_RATE_LIMIT_RPM
-    key_id = str(api_key.id) if api_key else str(user.id)
+    if x_test_rate_limit_rpm is not None:
+        rpm = max(1, min(x_test_rate_limit_rpm, 1000))
+        key_id = f"test:{str(api_key.id) if api_key else str(user.id)}:{rpm}"
+    else:
+        rpm = api_key.rate_limit_rpm if api_key else settings.DEFAULT_RATE_LIMIT_RPM
+        key_id = str(api_key.id) if api_key else str(user.id)
+        
     await rate_limiter.check_rate_limit(key_id, rpm)
 
     if body.stream:

@@ -429,7 +429,47 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres-db:5432/inference_p
 REDIS_URL=redis://redis-cache:6379/0
 JWT_SECRET=your-super-secret-jwt-key-change-me-in-production
 OLLAMA_BASE_URL=http://host.docker.internal:11435
+# Multi-user parallel request support
+OLLAMA_NUM_PARALLEL=4
+OLLAMA_MAX_LOADED_MODELS=4
 ```
+
+### Enabling Concurrent Multi-User Inference
+By default, Ollama executes only one model request at a time and queues concurrent requests, resulting in a loading state for secondary users. To enable concurrent multi-user execution, configure Ollama using the appropriate method for your environment:
+
+#### A. Host Machine (Windows - Recommended)
+1. Close Ollama completely from the Windows Taskbar (System Tray).
+2. Open **System Environment Variables** in Windows Control Panel.
+3. Add two new System/User Environment Variables:
+   - Name: `OLLAMA_NUM_PARALLEL`, Value: `4` (or number of desired parallel users)
+   - Name: `OLLAMA_MAX_LOADED_MODELS`, Value: `4`
+4. Start Ollama again.
+
+#### B. Linux Host or WSL
+Set the environment variables before starting the Ollama service:
+```bash
+export OLLAMA_NUM_PARALLEL=4
+export OLLAMA_MAX_LOADED_MODELS=4
+ollama serve
+```
+If starting via `systemd` (Linux service), run `sudo systemctl edit ollama.service` and add the following:
+```ini
+[Service]
+Environment="OLLAMA_NUM_PARALLEL=4"
+Environment="OLLAMA_MAX_LOADED_MODELS=4"
+```
+Then run `sudo systemctl daemon-reload && sudo systemctl restart ollama`.
+
+#### C. macOS Host
+Configure the variables via `launchctl` before launching Ollama:
+```bash
+launchctl setenv OLLAMA_NUM_PARALLEL 4
+launchctl setenv OLLAMA_MAX_LOADED_MODELS 4
+```
+Then restart the Ollama application.
+
+#### D. Fully Containerized (Docker Compose option)
+If you prefer running Ollama inside Docker, uncomment the `ollama` service at the end of the `docker-compose.yml` file. This automatically configures parallel request handling and loads multiple models concurrently.
 
 ### 3. Start the Ollama Proxy (WSL/Docker networking workaround)
 

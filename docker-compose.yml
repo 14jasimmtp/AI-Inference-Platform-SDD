@@ -44,6 +44,8 @@ services:
       REDIS_URL: redis://redis-cache:6379/0
       # Reach host Ollama via proxy to bypass localhost restrictions
       OLLAMA_BASE_URL: http://host.docker.internal:11435
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-4}
+      OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:-4}
     volumes:
       - ./backend/app:/backend/app
     ports:
@@ -81,6 +83,28 @@ services:
         condition: service_healthy
     networks:
       - platform-network
+
+  # 4. Ollama Service (Optional - Uncomment to run Ollama inside Docker with concurrent support out-of-the-box)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   environment:
+  #     - OLLAMA_NUM_PARALLEL=4
+  #     - OLLAMA_MAX_LOADED_MODELS=4
+  #   # For GPU acceleration, uncomment the section below (requires nvidia-container-toolkit)
+  #   # deploy:
+  #   #   resources:
+  #   #     reservations:
+  #   #       devices:
+  #   #         - driver: nvidia
+  #   #           count: all
+  #   #           capabilities: [gpu]
+  #   networks:
+  #     - platform-network
  
 networks:
   platform-network:
@@ -89,3 +113,4 @@ networks:
 volumes:
   ai-inference-platform-sdd_postgres_data:
     external: true
+  # ollama_data:

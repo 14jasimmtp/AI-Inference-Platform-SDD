@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from pydantic import BaseModel, EmailStr
@@ -60,10 +60,21 @@ async def me(current_user: User = Depends(get_current_user)):
     return ok(UserResponse.model_validate(current_user).model_dump())
 
 @router.get("/rate-limit", response_model=dict)
-async def get_rate_limit(current_user: User = Depends(get_current_user)):
+async def get_rate_limit(
+    current_user: User = Depends(get_current_user),
+    x_test_rate_limit_rpm: Optional[int] = Header(None, alias="x-test-rate-limit-rpm")
+):
     from app.core.rate_limiter import rate_limiter
     from app.config import settings
-    limit_info = await rate_limiter.peek_rate_limit(str(current_user.id), settings.DEFAULT_RATE_LIMIT_RPM)
+    
+    rpm = settings.DEFAULT_RATE_LIMIT_RPM
+    key_id = str(current_user.id)
+    if x_test_rate_limit_rpm is not None:
+        # Clamp between 1 and 1000 for safety
+        rpm = max(1, min(x_test_rate_limit_rpm, 1000))
+        key_id = f"test:{key_id}:{rpm}"
+        
+    limit_info = await rate_limiter.peek_rate_limit(key_id, rpm)
     return ok(limit_info)
 
 # --- Feature Phase 3 Extension Routes ---

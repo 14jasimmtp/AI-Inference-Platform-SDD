@@ -37,13 +37,20 @@ export const inferenceApi = {
     onError: (err: string) => void
   ) => {
     const token = localStorage.getItem('access_token')
+    const testRpm = localStorage.getItem('test_rate_limit_rpm')
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    }
+    if (testRpm && testRpm !== 'default') {
+      headers['x-test-rate-limit-rpm'] = testRpm
+    }
+
     try {
       const response = await fetch(`${API_BASE}/v1/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({ model, messages, stream: true }),
       })
 
