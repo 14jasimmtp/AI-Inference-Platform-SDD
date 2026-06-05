@@ -45,6 +45,9 @@ class AuthService:
 
         if not user.is_active:
             raise UnauthorizedError("Account is deactivated")
+            
+        if not user.is_verified:
+            raise UnauthorizedError("Email not verified")
 
         token = create_access_token(subject=str(user.id))
         logger.info("User logged in", extra={"user_id": str(user.id)})
@@ -105,14 +108,19 @@ class AuthService:
                 if not google_sso_id or not user_email:
                     raise UnauthorizedError("Failed to extract account details from Google response")
                 
-                # Optional Audience ID check if configured in environment settings
-                if settings.GOOGLE_CLIENT_ID:
-                    aud = info.get("aud")
-                    if aud != settings.GOOGLE_CLIENT_ID:
-                        logger.error(f"Google client ID mismatch: aud={aud}, expected={settings.GOOGLE_CLIENT_ID}")
-                        raise UnauthorizedError("Google Client ID audience validation failed")
+                # Audience ID check
+                if not settings.GOOGLE_CLIENT_ID:
+                    raise UnauthorizedError("Google SSO is disabled (missing Client ID)")
+                aud = info.get("aud")
+                if aud != settings.GOOGLE_CLIENT_ID:
+                    logger.error(f"Google client ID mismatch: aud={aud}, expected={settings.GOOGLE_CLIENT_ID}")
+                    raise UnauthorizedError("Google Client ID audience validation failed")
         else:
             # Fallback to simulated offline development flow
+            from app.config import settings
+            if settings.ENVIRONMENT != "development":
+                raise UnauthorizedError("Mock SSO is disabled in production")
+
             if not mock_google_token:
                 raise UnauthorizedError("No Google SSO credential provided")
             google_sso_id = mock_google_token
@@ -163,6 +171,8 @@ class AuthService:
                 raise UnauthorizedError("Invalid credentials")
             if not user.is_active:
                 raise UnauthorizedError("Account is deactivated")
+            if not user.is_verified:
+                raise UnauthorizedError("Email not verified")
             
             token = create_access_token(subject=str(user.id))
             logger.info("Unified user login complete", extra={"user_id": str(user.id)})

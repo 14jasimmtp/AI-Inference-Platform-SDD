@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { useTheme } from '../hooks/useTheme'
 import { orgsApi, usersApi, apiKeysAdminApi } from '../api/admin'
 import { authApi } from '../api/auth'
-import { ArrowLeft, Plus, Trash2, RefreshCw, Shield, Zap, Info, Sliders, Database, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, RefreshCw, Shield, Zap, Sliders, Database, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 
 // Basic layout for Admin
 export const AdminPage: React.FC = () => {
@@ -570,6 +570,7 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
 
 // Users Tab
 const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: number }) => {
+  const { user: currentUser } = useAuthStore()
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
@@ -666,13 +667,35 @@ const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: numb
                 <td style={{ padding: '16px 24px', fontWeight: 500 }}>{u.full_name}</td>
                 <td style={{ padding: '16px 24px', color: 'var(--color-text-secondary)' }}>{u.email}</td>
                 <td style={{ padding: '16px 24px' }}>
-                  <span style={{ 
-                    padding: '4px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
-                    background: u.role === 'org_admin' ? 'rgba(139, 92, 246, 0.1)' : u.role === 'team_lead' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-border-subtle)',
-                    color: u.role === 'org_admin' ? '#8b5cf6' : u.role === 'team_lead' ? '#3b82f6' : 'var(--color-text-secondary)'
-                  }}>
-                    {u.role.replace('_', ' ')}
-                  </span>
+                  {userLevel >= 3 && u.user_id !== currentUser?.id ? (
+                    <Select
+                      value={u.role}
+                      onChange={async (e) => {
+                        const newRole = e.target.value
+                        try {
+                          await usersApi.updateRole(userOrgId, u.user_id, newRole)
+                          await fetchUsers()
+                        } catch (err) {
+                          alert("Failed to update user role")
+                        }
+                      }}
+                      style={{ padding: '6px 12px', fontSize: '0.85rem', height: 'auto', width: 'auto' }}
+                    >
+                      <option value="user">User</option>
+                      <option value="team_lead">Team Lead</option>
+                      {(currentUser?.role === 'super_admin' || u.role === 'org_admin') && (
+                        <option value="org_admin" disabled={currentUser?.role !== 'super_admin'}>Org Admin</option>
+                      )}
+                    </Select>
+                  ) : (
+                    <span style={{ 
+                      padding: '4px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
+                      background: u.role === 'org_admin' ? 'rgba(139, 92, 246, 0.1)' : u.role === 'team_lead' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-border-subtle)',
+                      color: u.role === 'org_admin' ? '#8b5cf6' : u.role === 'team_lead' ? '#3b82f6' : 'var(--color-text-secondary)'
+                    }}>
+                      {u.role.replace('_', ' ')}
+                    </span>
+                  )}
                 </td>
                 {userLevel >= 3 && (
                   <td style={{ padding: '16px 24px', textAlign: 'right' }}>

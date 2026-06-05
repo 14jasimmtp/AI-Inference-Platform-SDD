@@ -20,9 +20,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
-      if (!window.location.pathname.startsWith('/auth')) {
-        window.location.href = '/auth'
+      localStorage.removeItem('auth-storage')
+      if (!window.location.pathname.startsWith('/login') && window.location.pathname !== '/mock-google-login') {
+        window.location.href = '/login'
       }
     }
     return Promise.reject(error)

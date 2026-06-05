@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useChatStore } from '../store/chatStore'
 import type { ChatSession } from '../store/chatStore'
 import { useAuthStore } from '../store/authStore'
@@ -21,7 +20,6 @@ const getRelativeTime = (ts: number) => {
 }
 
 export const ChatPage: React.FC = () => {
-  const navigate = useNavigate()
   const { user } = useAuthStore()
   const sessionsByUser = useChatStore((state) => state.sessionsByUser)
   const {

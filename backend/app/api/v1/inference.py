@@ -30,7 +30,7 @@ async def chat_completions(
     user, api_key = auth
 
     # Apply rate limiting
-    if x_test_rate_limit_rpm is not None:
+    if x_test_rate_limit_rpm is not None and settings.ENVIRONMENT == "development":
         rpm = max(1, min(x_test_rate_limit_rpm, 1000))
         key_id = f"test:{str(api_key.id) if api_key else str(user.id)}:{rpm}"
     else:
@@ -39,9 +39,13 @@ async def chat_completions(
         
     await rate_limiter.check_rate_limit(key_id, rpm)
 
+    # Extract tracking labels
+    user_id_str = str(user.id)
+    org_id_str = str(api_key.org_id) if api_key and api_key.org_id else "unknown"
+
     if body.stream:
         return StreamingResponse(
-            inference_service.stream_chat_completion(body),
+            inference_service.stream_chat_completion(body, user_id=user_id_str, org_id=org_id_str),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -49,4 +53,4 @@ async def chat_completions(
             }
         )
     else:
-        return await inference_service.chat_completion(body)
+        return await inference_service.chat_completion(body, user_id=user_id_str, org_id=org_id_str)

@@ -106,14 +106,20 @@ async def get_org_users(
 ) -> tuple[list[User], int]:
     """List all users in an organisation with pagination."""
     count_result = await db.execute(
-        select(func.count(User.id)).where(User.org_id == org_id)
+        select(func.count(User.id)).where(
+            User.org_id == org_id,
+            User.is_active == True,
+        )
     )
     total = count_result.scalar()
 
     offset = (page - 1) * page_size
     result = await db.execute(
         select(User)
-        .where(User.org_id == org_id)
+        .where(
+            User.org_id == org_id,
+            User.is_active == True,
+        )
         .order_by(User.created_at.desc())
         .offset(offset)
         .limit(page_size)

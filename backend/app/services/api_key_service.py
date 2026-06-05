@@ -110,8 +110,9 @@ async def list_keys(
     - team_lead → all keys in own org (phase 3 = org scoped)
     - user → own keys only; filter_user_id ignored
     """
-    query = select(ApiKey)
-    count_query = select(func.count(ApiKey.id))
+    query = select(ApiKey).where(ApiKey.is_active == True)
+    count_query = select(func.count(ApiKey.id)).where(ApiKey.is_active == True)
+
 
     role = requesting_user.role
 
@@ -226,6 +227,7 @@ class ApiKeyService:
             select(ApiKey).where(
                 ApiKey.key_hash == key_hash,
                 ApiKey.is_active == True,
+                (ApiKey.expires_at.is_(None)) | (ApiKey.expires_at > datetime.now(timezone.utc))
             )
         )
         api_key = result.scalar_one_or_none()

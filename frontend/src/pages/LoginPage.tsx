@@ -52,7 +52,6 @@ export const LoginPage: React.FC = () => {
       if (payload.action === 'login') {
         const { access_token, user } = payload
         localStorage.setItem('access_token', access_token)
-        localStorage.setItem('user', JSON.stringify(user))
 
         // Update Zustand auth store state
         useAuthStore.setState({ user, token: access_token, isAuthenticated: true })
@@ -107,10 +106,7 @@ export const LoginPage: React.FC = () => {
             try {
               const res = await authApi.googleSsoCallback(undefined, response.credential)
               const { access_token, user } = res.data.data
-
-              // Store session keys
               localStorage.setItem('access_token', access_token)
-              localStorage.setItem('user', JSON.stringify(user))
 
               // Set Zustand store session
               useAuthStore.setState({ user, token: access_token, isAuthenticated: true })
@@ -280,7 +276,7 @@ export const LoginPage: React.FC = () => {
           {step === 'password-login' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="claude-sans-control" style={{ color: 'var(--color-text-primary)', background: 'var(--color-bg-canvas)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--color-border-subtle)', boxSizing: 'border-box' }}>
-                Welcome back! Please enter your password.
+                Welcome! Please enter your password to sign in or create an account.
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -366,7 +362,7 @@ export const LoginPage: React.FC = () => {
                 }
               }}
             >
-              {loading ? 'Processing...' : step === 'email' ? 'Continue' : step === 'password-login' ? 'Sign In' : 'Create Account'}
+              {loading ? 'Processing...' : step === 'email' ? 'Continue' : 'Continue'}
             </button>
           </div>
         </form>

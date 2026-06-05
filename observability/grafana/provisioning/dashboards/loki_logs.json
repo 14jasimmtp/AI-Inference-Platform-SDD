@@ -1,0 +1,78 @@
+{
+  "id": null,
+  "uid": "loki-logs",
+  "title": "Loki Logs",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 8,
+  "refresh": "5s",
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "container",
+        "options": [],
+        "query": "label_values(container)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query",
+        "datasource": "Loki"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ".*",
+          "value": ".*"
+        },
+        "hide": 0,
+        "name": "search",
+        "options": [
+          {
+            "selected": true,
+            "text": ".*",
+            "value": ".*"
+          }
+        ],
+        "query": ".*",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "logs",
+      "title": "Container Logs",
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "{job=\"docker-containers\", container=~\"^$container$\"} |~ \".*$search.*\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "showLabels": true,
+        "showCommonLabels": false,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true
+      }
+    }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  }
+}

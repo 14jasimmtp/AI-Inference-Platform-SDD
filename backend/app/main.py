@@ -3,12 +3,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.logging_config import setup_logging
 from app.config import settings
 from app.exceptions import AppError
 from app.api.router import router
 from app.api.v1 import inference
-from app.core.metrics import metrics_router
+from app.core.metrics import metrics_router, PrometheusMiddleware
 from app.db.setup import setup_db
 
 # Setup structured logging first
@@ -46,6 +47,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Prometheus HTTP instrumentation middleware (auto-tracks all routes)
+app.add_middleware(PrometheusMiddleware)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+class LimitUploadSizeMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, max_upload_size: int):
+        super().__init__(app)
+        self.max_upload_size = max_upload_size
+
+    async def dispatch(self, request: Request, call_next):
+        if request.headers.get("content-length"):
+            if int(request.headers["content-length"]) > self.max_upload_size:
+                return JSONResponse(status_code=413, content={"detail": "Payload Too Large"})
+        return await call_next(request)
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(LimitUploadSizeMiddleware, max_upload_size=5 * 1024 * 1024)
 
 # Global exception handler for AppError hierarchy
 @app.exception_handler(AppError)

@@ -13,12 +13,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
 }
 
-const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuthStore()
-  if (!isAuthenticated) return <Navigate to="/login" replace />
-  return <>{children}</>
-}
-
 const App: React.FC = () => {
   const { isAuthenticated, refreshUser } = useAuthStore()
 
@@ -33,7 +27,9 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<Navigate to="/login" replace />} />
-        <Route path="/mock-google-login" element={<MockGoogleConsent />} />
+        {import.meta.env.DEV && (
+          <Route path="/mock-google-login" element={<MockGoogleConsent />} />
+        )}
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
@@ -47,9 +43,9 @@ const App: React.FC = () => {
         <Route
           path="/settings"
           element={
-            <AdminRoute>
+            <ProtectedRoute>
               <AdminPage />
-            </AdminRoute>
+            </ProtectedRoute>
           }
         />
         <Route path="*" element={<Navigate to="/chat" replace />} />

@@ -36,7 +36,7 @@ router = APIRouter(prefix="/orgs", tags=["organisations"])
 @router.post("", status_code=201)
 async def create_org(
     body: OrgCreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.SUPER_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ):
     org = await org_service.create_org(

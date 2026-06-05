@@ -108,12 +108,9 @@ async def sso_google_callback(
 @router.post("/access", response_model=dict)
 async def check_access(
     body: EmailCheckRequest,
-    db: AsyncSession = Depends(get_db),
 ):
-    """ Quick check if email already exists in system """
-    svc = AuthService(db)
-    exists = await svc.check_email_exists(body.email)
-    return ok({"exists": exists})
+    """ Always return True to prevent email enumeration """
+    return ok({"exists": True})
 
 @router.post("/register-login", response_model=dict)
 async def register_login_unified(

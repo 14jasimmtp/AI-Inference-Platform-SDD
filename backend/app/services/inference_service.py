@@ -10,8 +10,15 @@ from app.schemas.inference import (
     ModelListResponse, ModelInfo,
 )
 from app.exceptions import InferenceUnavailableError
+from app.core.metrics import (
+    inference_requests_total,
+    inference_duration_seconds,
+    inference_tokens_total,
+)
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_MODELS = {"llama3.2:3b-instruct-q4_K_M", "gemma2:2b-instruct-q4_K_M"}
 
 class InferenceService:
     def __init__(self):
@@ -25,7 +32,7 @@ class InferenceService:
             data = resp.json()
             models = [
                 ModelInfo(id=m["name"], owned_by="local")
-                for m in data.get("models", [])
+                for m in data.get("models", []) if m["name"] in ALLOWED_MODELS
             ]
             return ModelListResponse(data=models)
         except httpx.ConnectError:
@@ -35,9 +42,12 @@ class InferenceService:
             raise InferenceUnavailableError("Failed to retrieve models from Ollama")
 
     async def chat_completion(
-        self, request: ChatCompletionRequest
+        self, request: ChatCompletionRequest, user_id: str = "unknown", org_id: str = "unknown"
     ) -> ChatCompletionResponse:
         """Non-streaming chat completion."""
+        if request.model not in ALLOWED_MODELS:
+            raise InferenceUnavailableError(f"Model {request.model} is not allowed")
+            
         start_time = time.time()
         payload = {
             "model": request.model,
@@ -66,9 +76,33 @@ class InferenceService:
 
         data = resp.json()
         duration_ms = (time.time() - start_time) * 1000
+        prompt_tokens = data.get("prompt_eval_count", 0)
+        completion_tokens = data.get("eval_count", 0)
+
+        # Record Prometheus metrics
+        inference_requests_total.labels(
+            model=request.model, status="success", user_id=user_id, org_id=org_id
+        ).inc()
+        inference_duration_seconds.labels(
+            model=request.model, user_id=user_id, org_id=org_id
+        ).observe((time.time() - start_time))
+        inference_tokens_total.labels(
+            model=request.model, type="prompt", user_id=user_id, org_id=org_id
+        ).inc(prompt_tokens)
+        inference_tokens_total.labels(
+            model=request.model, type="completion", user_id=user_id, org_id=org_id
+        ).inc(completion_tokens)
+
         logger.info(
             "Inference complete",
-            extra={"model": request.model, "duration_ms": round(duration_ms, 2)}
+            extra={
+                "model": request.model,
+                "duration_ms": round(duration_ms, 2),
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "user_id": user_id,
+                "org_id": org_id,
+            }
         )
 
         return ChatCompletionResponse(
@@ -85,17 +119,21 @@ class InferenceService:
                 )
             ],
             usage=ChatCompletionUsage(
-                prompt_tokens=data.get("prompt_eval_count", 0),
-                completion_tokens=data.get("eval_count", 0),
-                total_tokens=data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=prompt_tokens + completion_tokens,
             ),
         )
 
     async def stream_chat_completion(
-        self, request: ChatCompletionRequest
+        self, request: ChatCompletionRequest, user_id: str = "unknown", org_id: str = "unknown"
     ) -> AsyncGenerator[str, None]:
         """SSE streaming chat completion — yields data: ... lines."""
+        if request.model not in ALLOWED_MODELS:
+            raise InferenceUnavailableError(f"Model {request.model} is not allowed")
+            
         import json
+        start_time = time.time()
         payload = {
             "model": request.model,
             "messages": [m.model_dump() for m in request.messages],
@@ -139,7 +177,37 @@ class InferenceService:
                         }]
                     }
                     yield f"data: {json.dumps(sse_data)}\n\n"
+                    
                     if done:
+                        # Stream finished, record metrics
+                        prompt_tokens = chunk.get("prompt_eval_count", 0)
+                        completion_tokens = chunk.get("eval_count", 0)
+                        duration = time.time() - start_time
+                        
+                        inference_requests_total.labels(
+                            model=request.model, status="success", user_id=user_id, org_id=org_id
+                        ).inc()
+                        inference_duration_seconds.labels(
+                            model=request.model, user_id=user_id, org_id=org_id
+                        ).observe(duration)
+                        inference_tokens_total.labels(
+                            model=request.model, type="prompt", user_id=user_id, org_id=org_id
+                        ).inc(prompt_tokens)
+                        inference_tokens_total.labels(
+                            model=request.model, type="completion", user_id=user_id, org_id=org_id
+                        ).inc(completion_tokens)
+                        
+                        logger.info(
+                            "Stream inference complete",
+                            extra={
+                                "model": request.model,
+                                "duration_ms": round(duration * 1000, 2),
+                                "prompt_tokens": prompt_tokens,
+                                "completion_tokens": completion_tokens,
+                                "user_id": user_id,
+                                "org_id": org_id,
+                            }
+                        )
                         break
         except httpx.ConnectError:
             raise InferenceUnavailableError("Ollama service is unavailable")

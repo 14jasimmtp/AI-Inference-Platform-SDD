@@ -232,7 +232,7 @@ const MessageBubble: React.FC<{
   isLastUser: boolean
   onRetry?: () => void
   isHighlighted?: boolean
-}> = ({ msg, index, messages, isLastUser, onRetry, isHighlighted = false }) => {
+}> = ({ msg, index, messages, isLastUser: _isLastUser, onRetry, isHighlighted = false }) => {
   const [copied, setCopied] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(msg.content)

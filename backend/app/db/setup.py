@@ -86,14 +86,20 @@ async def setup_db():
         from sqlalchemy import select
 
         async with AsyncSessionLocal() as db:
-            admin_email = "admin@platform.com"
+            if settings.ENVIRONMENT == "production":
+                logger.info("Skipping hardcoded superuser seed in production.")
+                return
+
+            admin_email = os.getenv("ADMIN_EMAIL", "admin@platform.com")
+            admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+            
             result = await db.execute(select(User).where(User.email == admin_email))
             if not result.scalar_one_or_none():
                 user = User(
                     id=uuid.uuid4(),
                     email=admin_email,
                     full_name="System Administrator",
-                    password_hash=get_password_hash("admin123"),
+                    password_hash=get_password_hash(admin_password),
                     role=UserRole.super_admin,
                     is_active=True
                 )

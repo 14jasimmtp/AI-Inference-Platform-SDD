@@ -1,9 +1,41 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  # Attach these labels to every time series this Prometheus scrapes
+  external_labels:
+    environment: 'local-dev'
+    project: 'ai-inference-platform'
 
 scrape_configs:
+  # ── FastAPI Backend (custom inference + auth metrics) ─────────────────────
   - job_name: 'api-backend'
     static_configs:
       - targets: ['api-backend:8000']
+        labels:
+          app: 'api-backend'
     metrics_path: '/metrics'
+    bearer_token: 'platform-internal-metrics'
+
+  # ── Host-based Ollama LLM Engine ──────────────────────────────────────────
+  - job_name: 'ollama-host'
+    static_configs:
+      - targets: ['host.docker.internal:11434']
+        labels:
+          app: 'ollama'
+    metrics_path: '/metrics'
+    # Ollama metrics endpoint may take a moment to respond on cold start
+    scrape_timeout: 10s
+
+  # ── Prometheus Self-Monitoring ────────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          app: 'prometheus'
+
+  # ── cAdvisor Container Metrics ────────────────────────────────────────────
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          app: 'cadvisor'
