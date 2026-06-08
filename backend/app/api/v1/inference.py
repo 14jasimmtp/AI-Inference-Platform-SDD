@@ -20,10 +20,14 @@ async def list_models(
     """List available models — OpenAI-compatible."""
     return await inference_service.list_models()
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db
+
 @router.post("/v1/chat/completions")
 async def chat_completions(
     body: ChatCompletionRequest,
     auth: tuple = Depends(get_api_key_user),
+    db: AsyncSession = Depends(get_db),
     x_test_rate_limit_rpm: Optional[int] = Header(None, alias="x-test-rate-limit-rpm")
 ):
     """Chat completions endpoint — supports streaming via SSE."""
@@ -34,7 +38,21 @@ async def chat_completions(
         rpm = max(1, min(x_test_rate_limit_rpm, 1000))
         key_id = f"test:{str(api_key.id) if api_key else str(user.id)}:{rpm}"
     else:
-        rpm = api_key.rate_limit_rpm if api_key else settings.DEFAULT_RATE_LIMIT_RPM
+        if api_key:
+            rpm = api_key.rate_limit_rpm
+        else:
+            rpm = settings.DEFAULT_RATE_LIMIT_RPM
+            if user.org_id:
+                try:
+                    from app.services import org_service
+                    org = await org_service.get_org(db, user.org_id)
+                    if org.rate_limit_rpm is not None:
+                        rpm = org.rate_limit_rpm
+                except Exception:
+                    pass
+            if user.rate_limit_rpm is not None:
+                rpm = user.rate_limit_rpm
+                
         key_id = str(api_key.id) if api_key else str(user.id)
         
     await rate_limiter.check_rate_limit(key_id, rpm)

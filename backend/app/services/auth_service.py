@@ -24,16 +24,24 @@ class AuthService:
         if existing_user:
             raise ConflictError(f"User with email '{request.email}' already exists")
 
+        import datetime
+        from app.core.auth import generate_secure_token
+        verification_token = generate_secure_token()
         user = User(
             email=request.email,
             full_name=request.full_name,
             password_hash=get_password_hash(request.password),
-            is_verified=True, # Standard old registration path remains verified by default
+            is_verified=False,
+            verification_token=verification_token,
+            verification_sent_at=datetime.datetime.now(datetime.timezone.utc),
         )
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
-        logger.info("User registered", extra={"user_id": str(user.id)})
+
+        # Send verification email
+        await EmailService.send_verification_email(request.email, verification_token)
+        logger.info("User registered (verification required)", extra={"user_id": str(user.id)})
         return user
 
     async def login(self, email: str, password: str) -> tuple[User, str]:
@@ -136,6 +144,9 @@ class AuthService:
         user = result.scalar_one_or_none()
 
         if user:
+            # Block deactivated users from logging in via SSO
+            if not user.is_active:
+                raise UnauthorizedError("Account is deactivated")
             # Update google_sso_id if not linked
             if not user.google_sso_id:
                 user.google_sso_id = google_sso_id

@@ -34,7 +34,8 @@ export const inferenceApi = {
     messages: import('../types').ChatMessage[],
     onChunk: (text: string) => void,
     onDone: () => void,
-    onError: (err: string) => void
+    onError: (err: string) => void,
+    signal?: AbortSignal
   ) => {
     const token = localStorage.getItem('access_token')
     const testRpm = localStorage.getItem('test_rate_limit_rpm')
@@ -52,6 +53,7 @@ export const inferenceApi = {
         method: 'POST',
         headers,
         body: JSON.stringify({ model, messages, stream: true }),
+        signal,
       })
 
       if (response.status === 401) {
@@ -61,31 +63,57 @@ export const inferenceApi = {
       }
 
       if (!response.ok) {
-        const err = await response.json()
-        onError(err?.error?.message || `HTTP ${response.status}`)
+        let errMsg = `HTTP ${response.status}`
+        try {
+          const err = await response.json()
+          errMsg = err?.error?.message || errMsg
+        } catch (_) {}
+        onError(errMsg)
         return
       }
 
       const reader = response.body!.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
 
       while (true) {
+        if (signal?.aborted) {
+          reader.cancel()
+          break
+        }
         const { done, value } = await reader.read()
         if (done) break
-        const text = decoder.decode(value, { stream: true })
-        const lines = text.split('\n').filter((l) => l.startsWith('data: '))
-        for (const line of lines) {
-          const data = line.replace('data: ', '').trim()
-          if (data === '[DONE]') { onDone(); return }
-          try {
-            const chunk: StreamChunk = JSON.parse(data)
-            const content = chunk.choices[0]?.delta?.content || ''
-            if (content) onChunk(content)
-          } catch (_) { /* skip malformed */ }
+        
+        buffer += decoder.decode(value, { stream: true })
+        
+        // Process complete lines
+        let newlineIndex
+        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, newlineIndex).trim()
+          buffer = buffer.slice(newlineIndex + 1)
+          
+          if (line.startsWith('data: ')) {
+            const data = line.replace('data: ', '').trim()
+            if (data === '[DONE]') {
+              onDone()
+              return
+            }
+            try {
+              const chunk: StreamChunk = JSON.parse(data)
+              const content = chunk.choices[0]?.delta?.content || ''
+              if (content) onChunk(content)
+            } catch (_) {
+              // skip malformed
+            }
+          }
         }
       }
       onDone()
     } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        onDone()
+        return
+      }
       onError(e instanceof Error ? e.message : 'Unknown error')
     }
   },

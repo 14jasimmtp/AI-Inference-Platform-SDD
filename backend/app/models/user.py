@@ -35,6 +35,7 @@ class User(Base, TimestampMixin):
     reset_token: Mapped[str] = mapped_column(String(255), nullable=True)
     reset_expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     google_sso_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    rate_limit_rpm: Mapped[int] = mapped_column(nullable=True)
     
     def __repr__(self):
         return f"<User {self.email}>"

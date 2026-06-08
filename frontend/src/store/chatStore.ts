@@ -16,10 +16,14 @@ interface ChatState {
   sessionsByUser: Record<string, ChatSession[]>
   currentSessionIdByUser: Record<string, string | null>
   streamingContent: string
+  streamingSessionId: string | null  // tracks WHICH session owns the stream
   isStreaming: boolean
   error: string | null
   model: string
   availableModels: string[]
+
+  // Internal: AbortController for in-flight inference
+  _abortController: AbortController | null
 
   // Computed / Accessors
   getSessions: () => ChatSession[]
@@ -34,6 +38,7 @@ interface ChatState {
   sendMessage: (content: string) => Promise<void>
   retryLastMessage: () => Promise<void>
   editMessage: (index: number, newContent: string) => Promise<void>
+  stopInference: () => void
 
   // Models
   setModel: (model: string) => void
@@ -60,10 +65,12 @@ export const useChatStore = create<ChatState>()(
       sessionsByUser: {},
       currentSessionIdByUser: {},
       streamingContent: '',
+      streamingSessionId: null,
       isStreaming: false,
       error: null,
       model: 'llama3.2:3b-instruct-q4_K_M',
       availableModels: [],
+      _abortController: null,
 
       getSessions: () => {
         const userId = getUserId()
@@ -86,6 +93,7 @@ export const useChatStore = create<ChatState>()(
             sessionsByUser: { ...s.sessionsByUser, [userId]: [session, ...userSessions] },
             currentSessionIdByUser: { ...s.currentSessionIdByUser, [userId]: session.id },
             streamingContent: '',
+            streamingSessionId: null,
             error: null,
           }
         })
@@ -95,8 +103,9 @@ export const useChatStore = create<ChatState>()(
         const userId = getUserId()
         set((s) => ({
           currentSessionIdByUser: { ...s.currentSessionIdByUser, [userId]: id },
-          streamingContent: '',
           error: null,
+          // Don't clear streamingContent or streamingSessionId — the stream
+          // continues in the background and only writes to the correct session
         }))
       },
 
@@ -113,6 +122,15 @@ export const useChatStore = create<ChatState>()(
             currentSessionIdByUser: { ...s.currentSessionIdByUser, [userId]: newCurrentId },
           }
         })
+      },
+
+      stopInference: () => {
+        const ctrl = get()._abortController
+        if (ctrl) {
+          ctrl.abort()
+        }
+        // The abort handler in the stream will call onDone which saves
+        // whatever content has been streamed so far
       },
 
       sendMessage: async (content: string) => {
@@ -141,53 +159,66 @@ export const useChatStore = create<ChatState>()(
           ? content.slice(0, 40) + (content.length > 40 ? '…' : '')
           : session.title
 
+        const abortController = new AbortController()
+        const sessionId = session.id
+
         set((s) => {
           const userSessions = s.sessionsByUser[userId] || []
           return {
             sessionsByUser: {
               ...s.sessionsByUser,
               [userId]: userSessions.map((sess) =>
-                sess.id === session!.id
+                sess.id === sessionId
                   ? { ...sess, messages: updatedMessages, title, updatedAt: Date.now() }
                   : sess
               ),
             },
             isStreaming: true,
             streamingContent: '',
+            streamingSessionId: sessionId,
             error: null,
+            _abortController: abortController,
           }
         })
-
-        const sessionId = session.id
 
         await inferenceApi.streamChatCompletion(
           get().model,
           updatedMessages,
           (chunk) => {
-            set((s) => ({ streamingContent: s.streamingContent + chunk }))
+            // Only accumulate if we're still streaming for this session
+            if (get().streamingSessionId === sessionId) {
+              set((s) => ({ streamingContent: s.streamingContent + chunk }))
+            }
           },
           () => {
             const finalContent = get().streamingContent
-            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
-            set((s) => {
-              const userSessions = s.sessionsByUser[userId] || []
-              return {
-                sessionsByUser: {
-                  ...s.sessionsByUser,
-                  [userId]: userSessions.map((sess) =>
-                    sess.id === sessionId
-                      ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
-                      : sess
-                  ),
-                },
-                streamingContent: '',
-                isStreaming: false,
-              }
-            })
+            if (finalContent.trim()) {
+              const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
+              set((s) => {
+                const userSessions = s.sessionsByUser[userId] || []
+                return {
+                  sessionsByUser: {
+                    ...s.sessionsByUser,
+                    [userId]: userSessions.map((sess) =>
+                      sess.id === sessionId
+                        ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
+                        : sess
+                    ),
+                  },
+                  streamingContent: '',
+                  streamingSessionId: null,
+                  isStreaming: false,
+                  _abortController: null,
+                }
+              })
+            } else {
+              set({ streamingContent: '', streamingSessionId: null, isStreaming: false, _abortController: null })
+            }
           },
           (err) => {
-            set({ error: err, isStreaming: false, streamingContent: '' })
-          }
+            set({ error: err, isStreaming: false, streamingContent: '', streamingSessionId: null, _abortController: null })
+          },
+          abortController.signal
         )
       },
 
@@ -209,53 +240,65 @@ export const useChatStore = create<ChatState>()(
         const lastUserMsg = updatedMessages[updatedMessages.length - 1]
         if (lastUserMsg.role !== 'user') return
 
+        const abortController = new AbortController()
+        const sessionId = session.id
+
         set((s) => {
           const userSessions = s.sessionsByUser[userId] || []
           return {
             sessionsByUser: {
               ...s.sessionsByUser,
               [userId]: userSessions.map((sess) =>
-                sess.id === session!.id
+                sess.id === sessionId
                   ? { ...sess, messages: updatedMessages, updatedAt: Date.now() }
                   : sess
               ),
             },
             isStreaming: true,
             streamingContent: '',
+            streamingSessionId: sessionId,
             error: null,
+            _abortController: abortController,
           }
         })
-
-        const sessionId = session.id
 
         await inferenceApi.streamChatCompletion(
           get().model,
           updatedMessages,
           (chunk) => {
-            set((s) => ({ streamingContent: s.streamingContent + chunk }))
+            if (get().streamingSessionId === sessionId) {
+              set((s) => ({ streamingContent: s.streamingContent + chunk }))
+            }
           },
           () => {
             const finalContent = get().streamingContent
-            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
-            set((s) => {
-              const userSessions = s.sessionsByUser[userId] || []
-              return {
-                sessionsByUser: {
-                  ...s.sessionsByUser,
-                  [userId]: userSessions.map((sess) =>
-                    sess.id === sessionId
-                      ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
-                      : sess
-                  ),
-                },
-                streamingContent: '',
-                isStreaming: false,
-              }
-            })
+            if (finalContent.trim()) {
+              const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
+              set((s) => {
+                const userSessions = s.sessionsByUser[userId] || []
+                return {
+                  sessionsByUser: {
+                    ...s.sessionsByUser,
+                    [userId]: userSessions.map((sess) =>
+                      sess.id === sessionId
+                        ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
+                        : sess
+                    ),
+                  },
+                  streamingContent: '',
+                  streamingSessionId: null,
+                  isStreaming: false,
+                  _abortController: null,
+                }
+              })
+            } else {
+              set({ streamingContent: '', streamingSessionId: null, isStreaming: false, _abortController: null })
+            }
           },
           (err) => {
-            set({ error: err, isStreaming: false, streamingContent: '' })
-          }
+            set({ error: err, isStreaming: false, streamingContent: '', streamingSessionId: null, _abortController: null })
+          },
+          abortController.signal
         )
       },
 
@@ -280,53 +323,65 @@ export const useChatStore = create<ChatState>()(
           ? newContent.slice(0, 40) + (newContent.length > 40 ? '…' : '')
           : session.title
 
+        const abortController = new AbortController()
+        const sessionId = session.id
+
         set((s) => {
           const userSessions = s.sessionsByUser[userId] || []
           return {
             sessionsByUser: {
               ...s.sessionsByUser,
               [userId]: userSessions.map((sess) =>
-                sess.id === session!.id
+                sess.id === sessionId
                   ? { ...sess, messages: updatedMessages, title, updatedAt: Date.now() }
                   : sess
               ),
             },
             isStreaming: true,
             streamingContent: '',
+            streamingSessionId: sessionId,
             error: null,
+            _abortController: abortController,
           }
         })
-
-        const sessionId = session.id
 
         await inferenceApi.streamChatCompletion(
           get().model,
           updatedMessages,
           (chunk) => {
-            set((s) => ({ streamingContent: s.streamingContent + chunk }))
+            if (get().streamingSessionId === sessionId) {
+              set((s) => ({ streamingContent: s.streamingContent + chunk }))
+            }
           },
           () => {
             const finalContent = get().streamingContent
-            const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
-            set((s) => {
-              const userSessions = s.sessionsByUser[userId] || []
-              return {
-                sessionsByUser: {
-                  ...s.sessionsByUser,
-                  [userId]: userSessions.map((sess) =>
-                    sess.id === sessionId
-                      ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
-                      : sess
-                  ),
-                },
-                streamingContent: '',
-                isStreaming: false,
-              }
-            })
+            if (finalContent.trim()) {
+              const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent, timestamp: Date.now() }
+              set((s) => {
+                const userSessions = s.sessionsByUser[userId] || []
+                return {
+                  sessionsByUser: {
+                    ...s.sessionsByUser,
+                    [userId]: userSessions.map((sess) =>
+                      sess.id === sessionId
+                        ? { ...sess, messages: [...sess.messages, assistantMsg], updatedAt: Date.now() }
+                        : sess
+                    ),
+                  },
+                  streamingContent: '',
+                  streamingSessionId: null,
+                  isStreaming: false,
+                  _abortController: null,
+                }
+              })
+            } else {
+              set({ streamingContent: '', streamingSessionId: null, isStreaming: false, _abortController: null })
+            }
           },
           (err) => {
-            set({ error: err, isStreaming: false, streamingContent: '' })
-          }
+            set({ error: err, isStreaming: false, streamingContent: '', streamingSessionId: null, _abortController: null })
+          },
+          abortController.signal
         )
       },
 

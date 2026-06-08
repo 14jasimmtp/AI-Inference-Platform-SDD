@@ -24,10 +24,12 @@ async def create_org(db: AsyncSession, name: str, slug: str, creator: User | Non
         await db.flush() # Get ID without committing yet
         
         if creator and not creator.org_id:
+            # Don't auto-join super_admins — they manage all orgs without membership
             from app.models.user import UserRole as ModelUserRole
-            creator.org_id = org.id
-            creator.role = ModelUserRole.org_admin
-            logger.info(f"Auto-joining creator {creator.email} to {slug}")
+            if creator.role != ModelUserRole.super_admin:
+                creator.org_id = org.id
+                creator.role = ModelUserRole.org_admin
+                logger.info(f"Auto-joining creator {creator.email} to {slug}")
 
         await db.commit()
         await db.refresh(org)
@@ -70,18 +72,20 @@ async def list_orgs(
 
 
 async def update_org(
-    db: AsyncSession, org_id: UUID, name: str
+    db: AsyncSession, org_id: UUID, **kwargs
 ) -> Organisation:
-    """Update an organisation's name. Raises NotFoundError."""
+    """Update an organisation's attributes. Raises NotFoundError."""
     org = await get_org(db, org_id)
-    org.name = name
+    for key, value in kwargs.items():
+        if hasattr(org, key):
+            setattr(org, key, value)
     try:
         await db.commit()
         await db.refresh(org)
     except IntegrityError:
         await db.rollback()
         raise ConflictError("Failed to update organisation")
-    logger.info("Organisation updated", extra={"org_id": str(org_id), "name": name})
+    logger.info("Organisation updated", extra={"org_id": str(org_id), "org_name": org.name})
     return org
 
 
@@ -105,6 +109,14 @@ async def delete_org(db: AsyncSession, org_id: UUID) -> None:
         raise ConflictError(
             f"Cannot delete organisation with {active_users} active user(s)"
         )
+
+    # Clear org_id on any remaining inactive users to prevent orphaned references
+    orphan_result = await db.execute(
+        select(User).where(User.org_id == org_id)
+    )
+    orphaned_users = orphan_result.scalars().all()
+    for u in orphaned_users:
+        u.org_id = None
 
     await db.delete(org)
     await db.commit()

@@ -16,6 +16,7 @@ class Organisation(Base, TimestampMixin):
         String(100), unique=True, nullable=False, index=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    rate_limit_rpm: Mapped[int] = mapped_column(nullable=True)
 
     def __repr__(self):
         return f"<Organisation {self.slug}>"

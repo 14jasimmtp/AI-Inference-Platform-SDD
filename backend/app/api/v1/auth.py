@@ -40,7 +40,11 @@ async def register(
 ):
     svc = AuthService(db)
     user = await svc.register(body)
-    return ok(UserResponse.model_validate(user).model_dump())
+    return ok({
+        "action": "register",
+        "is_verified": False,
+        "message": "Verification link has been sent to your email.",
+    })
 
 @router.post("/login", response_model=dict)
 async def login(
@@ -62,15 +66,31 @@ async def me(current_user: User = Depends(get_current_user)):
 @router.get("/rate-limit", response_model=dict)
 async def get_rate_limit(
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     x_test_rate_limit_rpm: Optional[int] = Header(None, alias="x-test-rate-limit-rpm")
 ):
     from app.core.rate_limiter import rate_limiter
     from app.config import settings
+    from app.services import org_service
     
     rpm = settings.DEFAULT_RATE_LIMIT_RPM
+    
+    # 1. Fallback: Org level RPM
+    if current_user.org_id:
+        try:
+            org = await org_service.get_org(db, current_user.org_id)
+            if org.rate_limit_rpm is not None:
+                rpm = org.rate_limit_rpm
+        except Exception:
+            pass
+            
+    # 2. Priority: User level RPM
+    if current_user.rate_limit_rpm is not None:
+        rpm = current_user.rate_limit_rpm
+
     key_id = str(current_user.id)
-    if x_test_rate_limit_rpm is not None:
-        # Clamp between 1 and 1000 for safety
+    if x_test_rate_limit_rpm is not None and settings.ENVIRONMENT == "development":
+        # Clamp between 1 and 1000 for safety, only in dev sandbox
         rpm = max(1, min(x_test_rate_limit_rpm, 1000))
         key_id = f"test:{key_id}:{rpm}"
         

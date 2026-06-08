@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.base import ok
-from app.schemas.user import InviteUserRequest, UpdateRoleRequest
+from app.schemas.user import InviteUserRequest, UpdateRoleRequest, UpdateUserRateLimitRequest
 from app.core.permissions import (
     UserRole,
     require_min_role,
@@ -59,7 +59,7 @@ async def list_org_users(
     org_id: UUID,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(require_min_role(UserRole.TEAM_LEAD)),
+    current_user: User = Depends(require_min_role(UserRole.USER)),
     db: AsyncSession = Depends(get_db),
 ):
     assert_same_org(current_user, org_id)
@@ -78,6 +78,7 @@ async def list_org_users(
                 "full_name": u.full_name,
                 "role": u.role,
                 "is_active": u.is_active,
+                "rate_limit_rpm": u.rate_limit_rpm,
                 "joined_at": u.created_at.isoformat(),
             }
             for u in items
@@ -144,3 +145,37 @@ async def remove_user(
         },
     )
     return ok({"user_id": str(user_id), "removed": True})
+
+
+# ── PATCH /orgs/{org_id}/users/{user_id}/rate-limit ─────────────────────────
+
+@router.patch("/{org_id}/users/{user_id}/rate-limit")
+async def update_user_rate_limit(
+    org_id: UUID,
+    user_id: UUID,
+    body: UpdateUserRateLimitRequest,
+    current_user: User = Depends(require_min_role(UserRole.ORG_ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    assert_same_org(current_user, org_id)
+    user = await user_service.update_user_rate_limit(
+        db,
+        org_id=org_id,
+        target_user_id=user_id,
+        rate_limit_rpm=body.rate_limit_rpm,
+        requesting_user=current_user,
+    )
+    logger.info(
+        "User rate limit updated",
+        extra={
+            "user_id": str(current_user.id),
+            "target_user_id": str(user_id),
+            "org_id": str(org_id),
+            "rate_limit_rpm": body.rate_limit_rpm,
+        },
+    )
+    return ok({
+        "user_id": str(user.id),
+        "rate_limit_rpm": user.rate_limit_rpm,
+        "updated_at": user.updated_at.isoformat(),
+    })

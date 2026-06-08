@@ -1,5 +1,6 @@
 """Pydantic schemas for Organisation CRUD."""
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, Field
 
@@ -10,7 +11,9 @@ class OrgCreateRequest(BaseModel):
 
 
 class OrgUpdateRequest(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255)
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    is_active: Optional[bool] = None
+    rate_limit_rpm: Optional[int] = Field(None, ge=1, le=10000)
 
 
 class OrgResponse(BaseModel):
@@ -18,6 +21,7 @@ class OrgResponse(BaseModel):
     name: str
     slug: str
     is_active: bool
+    rate_limit_rpm: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 

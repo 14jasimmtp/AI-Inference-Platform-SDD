@@ -83,6 +83,7 @@ async def list_orgs(
                 "name": o.name,
                 "slug": o.slug,
                 "is_active": o.is_active,
+                "rate_limit_rpm": o.rate_limit_rpm,
                 "created_at": o.created_at.isoformat(),
             }
             for o in items
@@ -107,6 +108,7 @@ async def get_org(
         "name": org.name,
         "slug": org.slug,
         "is_active": org.is_active,
+        "rate_limit_rpm": org.rate_limit_rpm,
         "member_count": stats["member_count"],
         "active_keys": stats["active_keys"],
         "created_at": org.created_at.isoformat(),
@@ -124,7 +126,8 @@ async def update_org(
     db: AsyncSession = Depends(get_db),
 ):
     assert_same_org(current_user, org_id)
-    org = await org_service.update_org(db, org_id, name=body.name)
+    update_data = body.model_dump(exclude_unset=True)
+    org = await org_service.update_org(db, org_id, **update_data)
     logger.info(
         "Organisation updated",
         extra={"user_id": str(current_user.id), "org_id": str(org_id)},
@@ -132,6 +135,7 @@ async def update_org(
     return ok({
         "org_id": str(org.id),
         "name": org.name,
+        "rate_limit_rpm": org.rate_limit_rpm,
         "updated_at": org.updated_at.isoformat(),
     })
 

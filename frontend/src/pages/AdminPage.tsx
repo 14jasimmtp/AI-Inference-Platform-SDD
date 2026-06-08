@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useTheme } from '../hooks/useTheme'
@@ -235,7 +235,7 @@ export const AdminPage: React.FC = () => {
             {activeTab === 'orgs' && <OrgsTab userLevel={userLevel} setActiveTab={setActiveTab} onSelect={(id) => { setSelectedOrgId(id); setActiveTab('users'); }} />}
             {activeTab === 'users' && userLevel >= 2 && <UsersTab userOrgId={selectedOrgId || user?.org_id || ''} userLevel={userLevel} />}
             {activeTab === 'keys' && <ApiKeysTab />}
-            {activeTab === 'limits' && <LimitsTab />}
+            {activeTab === 'limits' && <LimitsTab userOrgId={selectedOrgId || user?.org_id || ''} userLevel={userLevel} />}
           </div>
         </div>
       </div>
@@ -446,17 +446,26 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
             </div>
           </Card>
           
-          <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', background: 'var(--color-accent-amber-glow)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-amber)', marginBottom: '16px' }}>
-              <RefreshCw size={32} />
-            </div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px' }}>Team Management</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '24px' }}>Go to the Users & Roles tab to invite teammates to {myOrg.name}.</p>
-            <PrimaryButton onClick={() => setActiveTab('users')}>
-              Manage Users
-            </PrimaryButton>
-          </Card>
+          {userLevel >= 2 && (
+            <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ width: '64px', height: '64px', background: 'var(--color-accent-amber-glow)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-amber)', marginBottom: '16px' }}>
+                <RefreshCw size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px' }}>Team Management</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '24px' }}>Go to the Users & Roles tab to invite teammates to {myOrg.name}.</p>
+              <PrimaryButton onClick={() => setActiveTab('users')}>
+                Manage Users
+              </PrimaryButton>
+            </Card>
+          )}
         </div>
+
+        {userLevel < 2 && (
+          <div style={{ marginTop: '8px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Team Members</h3>
+            <UsersTab userOrgId={myOrg.org_id} userLevel={userLevel} hideTitle={true} />
+          </div>
+        )}
       </div>
     )
   }
@@ -569,7 +578,7 @@ const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string)
 }
 
 // Users Tab
-const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: number }) => {
+const UsersTab = ({ userOrgId, userLevel, hideTitle }: { userOrgId: string, userLevel: number, hideTitle?: boolean }) => {
   const { user: currentUser } = useAuthStore()
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -622,7 +631,7 @@ const UsersTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: numb
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      <SectionTitle>Users & Roles</SectionTitle>
+      {!hideTitle && <SectionTitle>Users & Roles</SectionTitle>}
       
       {userLevel >= 3 && (
         <Card>
@@ -894,516 +903,296 @@ const ApiKeysTab = () => {
   )
 }
 
-// Limits Tab showing visual remaining/total limit and Token Bucket simulator sandbox
-const LimitsTab: React.FC = () => {
+// Real Rate Limits Configuration Tab
+const LimitsTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: number }) => {
+  const { user: currentUser } = useAuthStore()
   const [limit, setLimit] = useState<number>(60)
   const [remaining, setRemaining] = useState<number>(60)
   const [reset, setReset] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [testRpm, setTestRpm] = useState<string>(() => {
-    return localStorage.getItem('test_rate_limit_rpm') || 'default'
-  })
-  const [logs, setLogs] = useState<{ time: string; type: 'success' | 'error' | 'info'; message: string }[]>([])
-  const [isTriggering, setIsTriggering] = useState<boolean>(false)
+  
+  const [orgUsers, setOrgUsers] = useState<any[]>([])
+  const [orgData, setOrgData] = useState<any>(null)
+  const [orgLimitInput, setOrgLimitInput] = useState<string>('')
+  
+  const [error, setError] = useState<string>('')
+  const [success, setSuccess] = useState<string>('')
+  
+  // Super Admin org selector
+  const [selectedAdminOrgId, setSelectedAdminOrgId] = useState<string>(userOrgId)
+  const [allOrgs, setAllOrgs] = useState<any[]>([])
 
-  const addLog = (type: 'success' | 'error' | 'info', message: string) => {
-    const time = new Date().toLocaleTimeString()
-    setLogs(prev => [...prev, { time, type, message }])
-  }
+  const effectiveOrgId = userLevel >= 4 && selectedAdminOrgId ? selectedAdminOrgId : userOrgId
 
-  const fetchRateLimit = async (rpmStr = testRpm, skipLoading = false) => {
-    if (!skipLoading) setIsLoading(true)
-    try {
-      const rpmVal = rpmStr === 'default' ? undefined : Number(rpmStr)
-      const res = await authApi.rateLimit(rpmVal)
-      const data = res.data.data
-      setLimit(data.limit)
-      setRemaining(data.remaining)
-      setReset(data.reset)
-    } catch (err: any) {
-      console.error("Error fetching rate limit status:", err)
-      if (err.response && err.response.status === 429) {
-        const retryAfter = err.response.data?.details?.retry_after || err.response.headers?.['retry-after'] || 10
-        setRemaining(0)
-        setReset(Number(retryAfter) || 10)
-      }
-    } finally {
-      if (!skipLoading) setIsLoading(false)
-    }
-  }
-
-  // Handle active simulation changes
-  const handleTestRpmChange = (val: string) => {
-    setTestRpm(val)
-    localStorage.setItem('test_rate_limit_rpm', val)
-    addLog('info', `Simulation changed to: ${val === 'default' ? 'Default (60 RPM)' : `${val} RPM`}`)
-    fetchRateLimit(val)
-  }
-
-  // Trigger rapid consecutive calls to exhaust limit
-  const triggerSimulation = async () => {
-    if (isTriggering || reset > 0) return
-    setIsTriggering(true)
-    const rpmVal = testRpm === 'default' ? undefined : Number(testRpm)
-    // Send enough requests to exhaust the bucket based on the active limit
-    const numPings = testRpm === 'default' ? 12 : testRpm === '5' ? 8 : 4
-    
-    addLog('info', `Initiating ping flood (${numPings} sequential requests) to test limits...`)
-    
-    for (let i = 1; i <= numPings; i++) {
+  useEffect(() => {
+    // Fetch live rate limit for the current user's session
+    const fetchLiveRateLimit = async () => {
       try {
-        const res = await authApi.rateLimit(rpmVal)
+        const res = await authApi.rateLimit()
         const data = res.data.data
         setLimit(data.limit)
         setRemaining(data.remaining)
         setReset(data.reset)
-        addLog('success', `Ping ${i}/${numPings}: 200 OK — Remaining capacity: ${data.remaining}/${data.limit}`)
       } catch (err: any) {
         if (err.response && err.response.status === 429) {
-          const retryAfter = err.response.data?.details?.retry_after || err.response.headers?.['retry-after'] || '10'
-          addLog('error', `Ping ${i}/${numPings}: 429 Too Many Requests — BLOCKED! Retry after ${retryAfter}s`)
+          const retryAfter = err.response.data?.details?.retry_after || 10
           setRemaining(0)
           setReset(Number(retryAfter) || 10)
-        } else {
-          addLog('error', `Ping ${i}/${numPings} Failed: ${err.message || 'Unknown network error'}`)
         }
       }
-      // Small 200ms visual delay between pings so the user can watch the bucket drain!
-      await new Promise(resolve => setTimeout(resolve, 200))
     }
-    setIsTriggering(false)
-  }
-
-  // Initial load
-  useEffect(() => {
-    fetchRateLimit()
-    addLog('info', `System initialized. Active rate-limit simulation set to: ${testRpm === 'default' ? 'Default (60 RPM)' : `${testRpm} RPM`}`)
+    fetchLiveRateLimit()
+    const timer = setInterval(fetchLiveRateLimit, 5000)
+    return () => clearInterval(timer)
   }, [])
 
-  // Poll for live refilling status every 5 seconds (only when tab is active)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Don't poll while triggering ping flood
-      if (!isTriggering) {
-        fetchRateLimit(testRpm, true)
-      }
-    }, 5000)
-    return () => clearInterval(timer)
-  }, [testRpm, isTriggering])
-
-  // Count down local reset timer if blocked
   useEffect(() => {
     if (reset <= 0) return
-    const timer = setInterval(() => {
-      setReset(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          addLog('info', `Rate limiting block cleared. Bucket has begun refilling.`)
-          fetchRateLimit(testRpm)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+    const timer = setInterval(() => setReset(p => Math.max(0, p - 1)), 1000)
     return () => clearInterval(timer)
   }, [reset])
 
-  const percentage = Math.max(0, Math.min(100, (remaining / limit) * 100))
-  const ratio = remaining / limit
-  
-  // Decide gauge color
-  let progressColor = '#10b981' // Green
-  let progressGlow = 'rgba(16, 185, 129, 0.15)'
-  if (ratio < 0.2) {
-    progressColor = '#ef4444' // Red
-    progressGlow = 'rgba(239, 68, 68, 0.15)'
-  } else if (ratio < 0.5) {
-    progressColor = 'var(--color-accent-amber)' // Amber
-    progressGlow = 'var(--color-accent-amber-glow)'
+  const loadOrgData = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      if (userLevel >= 4 && allOrgs.length === 0) {
+        const orgsRes = await orgsApi.list()
+        setAllOrgs(orgsRes.data.data)
+      }
+      if (effectiveOrgId) {
+        const [orgRes, usersRes] = await Promise.all([
+          orgsApi.get(effectiveOrgId),
+          usersApi.list(effectiveOrgId)
+        ])
+        setOrgData(orgRes.data.data)
+        setOrgLimitInput(orgRes.data.data.rate_limit_rpm ? String(orgRes.data.data.rate_limit_rpm) : '')
+        setOrgUsers(usersRes.data.data)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [effectiveOrgId, userLevel, allOrgs.length])
+
+  useEffect(() => {
+    loadOrgData()
+  }, [loadOrgData])
+
+  const handleUpdateOrgLimit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!effectiveOrgId || !orgData) return
+    try {
+      const val = orgLimitInput.trim() === '' ? undefined : Number(orgLimitInput)
+      await orgsApi.update(effectiveOrgId, orgData.name, val)
+      setSuccess("Organization rate limit updated")
+      loadOrgData()
+    } catch (e: any) {
+      setError(e.response?.data?.error?.message || "Error updating org rate limit")
+    }
   }
+
+  const handleUpdateUserLimit = async (userId: string, valStr: string) => {
+    if (!effectiveOrgId) return
+    setError('')
+    setSuccess('')
+    try {
+      const val = valStr.trim() === '' ? null : Number(valStr)
+      await usersApi.updateRateLimit(effectiveOrgId, userId, val)
+      setSuccess("User rate limit updated")
+      loadOrgData()
+    } catch (e: any) {
+      setError(e.response?.data?.error?.message || "Error updating user rate limit")
+    }
+  }
+
+  const percentage = Math.max(0, Math.min(100, (remaining / limit) * 100))
+  const progressColor = remaining / limit < 0.2 ? '#ef4444' : remaining / limit < 0.5 ? 'var(--color-accent-amber)' : '#10b981'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', animation: 'fadeSlideUp 0.3s ease' }}>
       <div>
         <h2 className="claude-serif-title" style={{ fontSize: '1.75rem', color: 'var(--color-text-primary)', marginBottom: '8px' }}>
-          Usage &amp; Rate Limits
+          Usage &amp; Rate Limits Configuration
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
-          Monitor, understand, and simulate API capacity throttling in real time using high-performance Redis Token Buckets.
+          Configure API rate limits (RPM) for organizations and individual users. Leave blank to inherit the default (60 RPM).
         </p>
       </div>
 
-      {/* Main Stats Card */}
-      <Card style={{ position: 'relative', overflow: 'hidden' }}>
-        {isLoading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '140px' }}>
-            <div style={{ width: '30px', height: '30px', border: '3px solid var(--color-border-subtle)', borderTopColor: 'var(--color-accent-amber)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      {error && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          padding: '16px',
+          borderRadius: '12px',
+          color: '#ef4444',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          animation: 'shake 0.5s ease'
+        }}>
+          <AlertTriangle size={20} />
+          <span style={{ flex: 1, fontSize: '0.9rem' }}>{error}</span>
+          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+        </div>
+      )}
+
+      {success && (
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.1)',
+          border: '1px solid rgba(16, 185, 129, 0.2)',
+          padding: '16px',
+          borderRadius: '12px',
+          color: '#10b981',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}>
+          <CheckCircle size={20} />
+          <span style={{ flex: 1, fontSize: '0.9rem' }}>{success}</span>
+          <button onClick={() => setSuccess('')} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+        </div>
+      )}
+
+      {userLevel >= 4 && (
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <span style={{ fontWeight: 600 }}>Select Organization to Manage:</span>
+            <Select 
+              value={selectedAdminOrgId} 
+              onChange={e => setSelectedAdminOrgId(e.target.value)}
+              style={{ flex: 1, maxWidth: '400px' }}
+            >
+              <option value="">-- Select an Organization --</option>
+              {allOrgs.map(o => <option key={o.org_id} value={o.org_id}>{o.name} ({o.slug})</option>)}
+            </Select>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Header / Title */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        </Card>
+      )}
+
+      {effectiveOrgId ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+          
+          {userLevel >= 3 && (
+            <Card>
+              <h3 className="claude-serif-title" style={{ fontSize: '1.2rem', marginBottom: '16px' }}>
+                Organization Limit
+              </h3>
+              {isLoading ? <div>Loading...</div> : orgData ? (
+                <form onSubmit={handleUpdateOrgLimit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                      Rate Limit (Requests Per Minute)
+                    </label>
+                    <Input 
+                      type="number" 
+                      placeholder="Inherit global default (60)" 
+                      value={orgLimitInput}
+                      onChange={e => setOrgLimitInput(e.target.value)}
+                      min={1}
+                      max={10000}
+                    />
+                    <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                      This applies to all users in {orgData.name} unless specifically overridden.
+                    </p>
+                  </div>
+                  <PrimaryButton type="submit">Save Organization Limit</PrimaryButton>
+                </form>
+              ) : <div>Error loading organization</div>}
+            </Card>
+          )}
+
+          <Card style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Shield size={20} style={{ color: progressColor }} />
-                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Active Capacity Bucket</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                <span style={{ 
-                  display: 'inline-block', 
-                  width: '8px', 
-                  height: '8px', 
-                  borderRadius: '50%', 
-                  background: reset > 0 ? '#ef4444' : '#10b981', 
-                  animation: reset > 0 ? 'pulse-red 1.5s infinite' : 'pulse-green 1.5s infinite' 
-                }}></span>
-                {reset > 0 ? `Rate Limited (Locked)` : `Active & Refilling`}
+                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Your Active Capacity Bucket</span>
               </div>
             </div>
-
-            {/* Huge Visual Progress Bar */}
             <div>
               <div style={{ 
-                height: '24px', 
-                background: 'var(--color-bg-canvas)', 
-                borderRadius: '12px', 
-                border: '1px solid var(--color-border-subtle)', 
-                overflow: 'hidden', 
-                position: 'relative',
-                boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.03)' 
+                height: '24px', background: 'var(--color-bg-canvas)', borderRadius: '12px', 
+                border: '1px solid var(--color-border-subtle)', overflow: 'hidden' 
               }}>
                 <div style={{ 
-                  width: `${percentage}%`, 
-                  height: '100%', 
-                  background: progressColor, 
-                  boxShadow: `0 0 12px ${progressGlow}`,
-                  transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
-                  borderRadius: '12px' 
+                  width: `${percentage}%`, height: '100%', background: progressColor, 
+                  transition: 'width 0.4s', borderRadius: '12px' 
                 }}></div>
               </div>
-              
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '0.85rem' }}>
-                <span style={{ fontWeight: 600, color: progressColor }}>
-                  {remaining} / {limit} tokens remaining
-                </span>
-                <span style={{ color: 'var(--color-text-secondary)' }}>
-                  Total Capacity: {limit} RPM
-                </span>
+                <span style={{ fontWeight: 600, color: progressColor }}>{remaining} / {limit} tokens</span>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Total: {limit} RPM</span>
               </div>
             </div>
+          </Card>
 
-            {/* Under-the-hood Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginTop: '8px' }}>
-              
-              <div style={{ background: 'var(--color-bg-canvas)', border: '1px solid var(--color-border-subtle)', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-text-secondary)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <Clock size={14} /> Refill Mechanism
-                </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                  1 token every {(60 / limit).toFixed(1)}s
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                  Refills continuously in Redis on every incoming request. No discrete resets.
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--color-bg-canvas)', border: '1px solid var(--color-border-subtle)', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-text-secondary)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <Sliders size={14} /> Key Expiry TTL
-                </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                  120s inactivity
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                  Redis deletes the tracking key automatically after 2 minutes of idle time.
-                </div>
-              </div>
-
-              <div style={{ 
-                background: reset > 0 ? 'rgba(239, 68, 68, 0.04)' : 'rgba(16, 185, 129, 0.04)', 
-                border: `1px solid ${reset > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`, 
-                borderRadius: '12px', 
-                padding: '16px' 
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: reset > 0 ? '#ef4444' : '#10b981', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {reset > 0 ? <AlertTriangle size={14} /> : <CheckCircle size={14} />} 
-                  System Status
-                </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 600, color: reset > 0 ? '#ef4444' : '#10b981' }}>
-                  {reset > 0 ? `Blocked for ${reset}s` : `Active (No Block)`}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                  {reset > 0 ? `Fast API calls are temporarily blocked until bucket refilling resumes.` : `API requests are executing under simulated quota levels.`}
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        )}
-        <style>{`
-          @keyframes pulse-green {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.3); opacity: 1; }
-          }
-          @keyframes pulse-red {
-            0%, 100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 4px #ef4444; }
-            50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px #ef4444; }
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </Card>
-
-      {/* Simulator Sandbox Card */}
-      <Card style={{ padding: '32px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <Zap size={22} style={{ color: 'var(--color-accent-amber)' }} />
-              <h3 className="claude-serif-title" style={{ fontSize: '1.4rem', color: 'var(--color-text-primary)' }}>
-                Rate Limiting Simulation Sandbox
-              </h3>
-            </div>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
-              Select a sandboxed rate limit. These settings are applied dynamically via the secure header <code style={{ background: 'var(--color-bg-canvas)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-border-subtle)', fontFamily: 'monospace' }}>x-test-rate-limit-rpm</code>. It isolates simulation calls into a test namespace so you don't block your regular chat history session!
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            
-            {/* Selection Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-              
-              <div 
-                onClick={() => handleTestRpmChange('default')}
-                style={{ 
-                  border: `2px solid ${testRpm === 'default' ? 'var(--color-accent-amber)' : 'var(--color-border-subtle)'}`,
-                  background: testRpm === 'default' ? 'var(--color-accent-amber-glow)' : 'transparent',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  cursor: 'pointer',
-                  transition: 'var(--transition-smooth)'
-                }}
-                onMouseEnter={(e) => { if (testRpm !== 'default') e.currentTarget.style.borderColor = 'var(--color-text-secondary)' }}
-                onMouseLeave={(e) => { if (testRpm !== 'default') e.currentTarget.style.borderColor = 'var(--color-border-subtle)' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Default (60 RPM)</span>
-                  <input type="radio" checked={testRpm === 'default'} onChange={() => {}} style={{ accentColor: 'var(--color-accent-amber)' }} />
-                </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                  Standard workspace rate limit. Good for heavy development and regular chat streams.
-                </p>
-              </div>
-
-              <div 
-                onClick={() => handleTestRpmChange('5')}
-                style={{ 
-                  border: `2px solid ${testRpm === '5' ? 'var(--color-accent-amber)' : 'var(--color-border-subtle)'}`,
-                  background: testRpm === '5' ? 'var(--color-accent-amber-glow)' : 'transparent',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  cursor: 'pointer',
-                  transition: 'var(--transition-smooth)'
-                }}
-                onMouseEnter={(e) => { if (testRpm !== '5') e.currentTarget.style.borderColor = 'var(--color-text-secondary)' }}
-                onMouseLeave={(e) => { if (testRpm !== '5') e.currentTarget.style.borderColor = 'var(--color-border-subtle)' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Simulated Low (5 RPM)</span>
-                  <input type="radio" checked={testRpm === '5'} onChange={() => {}} style={{ accentColor: 'var(--color-accent-amber)' }} />
-                </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                  Restricted plan simulation. Refills 1 token every 12 seconds. Easy to test rate locks!
-                </p>
-              </div>
-
-              <div 
-                onClick={() => handleTestRpmChange('1')}
-                style={{ 
-                  border: `2px solid ${testRpm === '1' ? 'var(--color-accent-amber)' : 'var(--color-border-subtle)'}`,
-                  background: testRpm === '1' ? 'var(--color-accent-amber-glow)' : 'transparent',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  cursor: 'pointer',
-                  transition: 'var(--transition-smooth)'
-                }}
-                onMouseEnter={(e) => { if (testRpm !== '1') e.currentTarget.style.borderColor = 'var(--color-text-secondary)' }}
-                onMouseLeave={(e) => { if (testRpm !== '1') e.currentTarget.style.borderColor = 'var(--color-border-subtle)' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Immediate Block (1 RPM)</span>
-                  <input type="radio" checked={testRpm === '1'} onChange={() => {}} style={{ accentColor: 'var(--color-accent-amber)' }} />
-                </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                  Ultra-strict throttling. Refills 1 token every 60 seconds. A single request triggers block.
-                </p>
-              </div>
-
-            </div>
-
-            {/* Action and Terminal Logs Split */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'stretch' }}>
-              
-              {/* Sandbox controls explainer */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: '1.6' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>Sandbox Flood Tester</div>
-                  Use the trigger button to flood the rate-limiting endpoint. Watch how consecutive pings drain tokens down to 0, instantly transition to HTTP 429, and then capture the countdown time needed to regain clearance.
-                  <div style={{ marginTop: '12px', padding: '12px', borderLeft: '3px solid var(--color-accent-amber)', background: 'var(--color-bg-canvas)', fontSize: '0.8rem' }}>
-                    <strong>Note:</strong> While a test RPM is active, opening Chat and streaming completions will also use this sandboxed limit, letting you experience raw chat rate limiting first-hand!
-                  </div>
-                </div>
-
-                <PrimaryButton 
-                  onClick={triggerSimulation}
-                  disabled={isTriggering || reset > 0}
-                  style={{ 
-                    justifyContent: 'center', 
-                    padding: '14px',
-                    opacity: (isTriggering || reset > 0) ? 0.6 : 1,
-                    cursor: (isTriggering || reset > 0) ? 'not-allowed' : 'pointer',
-                    width: '100%'
-                  }}
-                >
-                  <Zap size={18} /> {isTriggering ? 'Flooding Sandbox...' : reset > 0 ? `Locked (Wait ${reset}s)` : 'Rapidly Trigger Limit (Ping Flood)'}
-                </PrimaryButton>
-              </div>
-
-              {/* Terminal Logs */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sandbox Console Output</span>
-                  <button 
-                    onClick={() => setLogs([])}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--color-text-secondary)', fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Clear Logs
-                  </button>
-                </div>
-                
-                <div style={{ 
-                  flex: 1,
-                  minHeight: '200px',
-                  background: '#18181B', 
-                  border: '1px solid var(--color-border-subtle)',
-                  borderRadius: '12px', 
-                  padding: '16px',
-                  fontFamily: 'monospace',
-                  fontSize: '0.8rem',
-                  color: '#A1A1AA',
-                  overflowY: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.5)'
-                }}>
-                  {logs.length === 0 ? (
-                    <div style={{ color: '#52525B', fontStyle: 'italic', margin: 'auto' }}>Console ready. Run a ping flood to view logs.</div>
-                  ) : (
-                    logs.map((log, index) => {
-                      let color = '#A1A1AA' // Grey
-                      if (log.type === 'success') color = '#34D399' // Light Green
-                      else if (log.type === 'error') color = '#F87171' // Light Red
-                      else if (log.type === 'info') color = '#60A5FA' // Light Blue
-                      
-                      return (
-                        <div key={index} style={{ wordBreak: 'break-all', display: 'flex', gap: '8px', lineHeight: '1.4' }}>
-                          <span style={{ color: '#52525B' }}>[{log.time}]</span>
-                          <span style={{ color }}>{log.message}</span>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-          </div>
         </div>
-      </Card>
+      ) : (
+        <Card><div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '20px' }}>Please select an organization.</div></Card>
+      )}
 
-      {/* Educational How it Works */}
-      <Card style={{ padding: '32px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <Database size={22} style={{ color: 'var(--color-accent-amber)' }} />
-              <h3 className="claude-serif-title" style={{ fontSize: '1.4rem', color: 'var(--color-text-primary)' }}>
-                Under The Hood: Redis Token Bucket Math
-              </h3>
-            </div>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-              Learn how our distributed API cluster computes lightning-fast rate limits atomically with zero race conditions.
-            </p>
+      {effectiveOrgId && userLevel >= 3 && (
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '24px', borderBottom: '1px solid var(--color-border-subtle)' }}>
+            <h3 className="claude-serif-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+              User Specific Limits
+            </h3>
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-            
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ 
-                width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-accent-amber-glow)', color: 'var(--color-accent-amber)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.9rem', flexShrink: 0
-              }}>1</div>
-              <div>
-                <h4 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '6px' }}>The Token Bucket Pattern</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                  Think of limits as a bucket that holds up to <code style={{ fontFamily: 'monospace' }}>capacity</code> tokens (e.g. 60). Every API request consumes 1 token. If the bucket is empty, requests are blocked with HTTP 429.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ 
-                width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-accent-amber-glow)', color: 'var(--color-accent-amber)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.9rem', flexShrink: 0
-              }}>2</div>
-              <div>
-                <h4 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '6px' }}>On-the-Fly Continuous Refills</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                  Instead of resetting at rigid boundaries, tokens refill smoothly based on elapsed time: 
-                  <code style={{ display: 'block', margin: '4px 0', padding: '2px 4px', background: 'var(--color-bg-canvas)', border: '1px solid var(--color-border-subtle)', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'monospace' }}>
-                    tokens = min(cap, tokens + elapsed * rate)
-                  </code>
-                  Calculated dynamically on request arrival, saving background resources!
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ 
-                width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-accent-amber-glow)', color: 'var(--color-accent-amber)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.9rem', flexShrink: 0
-              }}>3</div>
-              <div>
-                <h4 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '6px' }}>Atomic Redis Lua Scripts</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                  To prevent multi-threaded race conditions (like double-spending), we package the entire math sequence into a custom Lua script. Redis executes it atomically in a single, block-free step.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ 
-                width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-accent-amber-glow)', color: 'var(--color-accent-amber)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.9rem', flexShrink: 0
-              }}>4</div>
-              <div>
-                <h4 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '6px' }}>Zero-Waste Memory Expiry</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                  Whenever the Lua script updates the bucket, it updates an EXPIRE TTL to 120 seconds. If a user goes idle for 2 minutes, Redis cleans up the record completely, keeping memory lean!
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </Card>
+          {isLoading ? (
+            <div style={{ padding: '24px', textAlign: 'center' }}>Loading users...</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead style={{ background: 'var(--color-bg-canvas)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                <tr>
+                  <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>User</th>
+                  <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Role</th>
+                  <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Rate Limit (RPM)</th>
+                  <th style={{ padding: '16px 24px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orgUsers.map(u => (
+                  <UserRow key={u.user_id} u={u} handleUpdateUserLimit={handleUpdateUserLimit} />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
+      )}
 
     </div>
+  )
+}
+
+const UserRow = ({ u, handleUpdateUserLimit }: { u: any, handleUpdateUserLimit: (userId: string, val: string) => void }) => {
+  const [rpmInput, setRpmInput] = useState(u.rate_limit_rpm ? String(u.rate_limit_rpm) : '')
+  return (
+    <tr style={{ borderBottom: '1px solid var(--color-border-subtle)' }}>
+      <td style={{ padding: '16px 24px' }}>
+        <div style={{ fontWeight: 500 }}>{u.full_name}</div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{u.email}</div>
+      </td>
+      <td style={{ padding: '16px 24px', textTransform: 'capitalize' }}>{u.role.replace('_', ' ')}</td>
+      <td style={{ padding: '16px 24px' }}>
+        <Input 
+          type="number" 
+          placeholder="Inherit Org Limit"
+          value={rpmInput}
+          onChange={e => setRpmInput(e.target.value)}
+          style={{ maxWidth: '150px' }}
+        />
+      </td>
+      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+        <PrimaryButton 
+          onClick={() => handleUpdateUserLimit(u.user_id, rpmInput)}
+          style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'inline-flex' }}
+        >
+          Save
+        </PrimaryButton>
+      </td>
+    </tr>
   )
 }

@@ -4,7 +4,7 @@ export const orgsApi = {
   list: () => api.get('/api/v1/orgs'),
   get: (orgId: string) => api.get(`/api/v1/orgs/${orgId}`),
   create: (name: string, slug: string) => api.post('/api/v1/orgs', { name, slug }),
-  update: (orgId: string, name: string) => api.put(`/api/v1/orgs/${orgId}`, { name }),
+  update: (orgId: string, name: string, rate_limit_rpm?: number) => api.put(`/api/v1/orgs/${orgId}`, { name, rate_limit_rpm }),
   delete: (orgId: string) => api.delete(`/api/v1/orgs/${orgId}`),
 }
 
@@ -14,6 +14,8 @@ export const usersApi = {
     api.post(`/api/v1/orgs/${orgId}/invite`, { email, role }),
   updateRole: (orgId: string, userId: string, role: string) => 
     api.patch(`/api/v1/orgs/${orgId}/users/${userId}`, { role }),
+  updateRateLimit: (orgId: string, userId: string, rate_limit_rpm: number | null) =>
+    api.patch(`/api/v1/orgs/${orgId}/users/${userId}/rate-limit`, { rate_limit_rpm }),
   remove: (orgId: string, userId: string) => 
     api.delete(`/api/v1/orgs/${orgId}/users/${userId}`),
 }

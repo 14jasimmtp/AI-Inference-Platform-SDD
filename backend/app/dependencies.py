@@ -36,6 +36,8 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
         raise UnauthorizedError("User not found or deactivated")
+    if not user.is_verified:
+        raise UnauthorizedError("Email not verified")
     return user
 
 async def get_api_key_user(

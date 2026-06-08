@@ -17,7 +17,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - platform-network
+      - monitoring-network
+      - backend-network
     restart: unless-stopped
 
   # ── Grafana Dashboard ─────────────────────────────────────────────────────
@@ -38,7 +39,7 @@ services:
       - prometheus
       - loki
     networks:
-      - platform-network
+      - monitoring-network
     restart: unless-stopped
 
   # ── Grafana Loki (Log Store) ──────────────────────────────────────────────
@@ -52,7 +53,7 @@ services:
       - loki_data:/loki
     command: -config.file=/etc/loki/loki-config.yml
     networks:
-      - platform-network
+      - monitoring-network
     restart: unless-stopped
 
   # ── Promtail (Log Shipper) ────────────────────────────────────────────────
@@ -68,7 +69,7 @@ services:
     depends_on:
       - loki
     networks:
-      - platform-network
+      - monitoring-network
     restart: unless-stopped
 
   # ── cAdvisor (Container Metrics) ──────────────────────────────────────────
@@ -88,7 +89,7 @@ services:
     devices:
       - /dev/kmsg
     networks:
-      - platform-network
+      - monitoring-network
     restart: unless-stopped
 
 volumes:
@@ -97,4 +98,6 @@ volumes:
   loki_data:
 
 networks:
-  platform-network:
+  monitoring-network:
+    driver: bridge
+  backend-network:

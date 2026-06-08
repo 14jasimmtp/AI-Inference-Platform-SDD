@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Literal, Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 # ── Existing auth schemas (preserved) ─────────────────────────────────────────
@@ -30,6 +30,7 @@ class UserResponse(BaseModel):
     role: str
     org_id: Optional[UUID] = None
     is_active: bool
+    rate_limit_rpm: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -56,9 +57,14 @@ class OrgUserResponse(BaseModel):
     role: str
     is_active: bool
     joined_at: datetime
+    rate_limit_rpm: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
 
 class UpdateRoleRequest(BaseModel):
     role: Literal["org_admin", "team_lead", "user"]  # super_admin NOT assignable
+
+
+class UpdateUserRateLimitRequest(BaseModel):
+    rate_limit_rpm: Optional[int] = Field(None, ge=1, le=10000)

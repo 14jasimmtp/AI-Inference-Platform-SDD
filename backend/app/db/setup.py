@@ -101,7 +101,8 @@ async def setup_db():
                     full_name="System Administrator",
                     password_hash=get_password_hash(admin_password),
                     role=UserRole.super_admin,
-                    is_active=True
+                    is_active=True,
+                    is_verified=True,
                 )
                 db.add(user)
                 await db.commit()

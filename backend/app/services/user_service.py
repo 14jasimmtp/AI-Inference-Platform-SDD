@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
-from app.models.user import User
+from app.models.user import User, UserRole as ModelUserRole
 from app.models.api_key import ApiKey
 from app.core.auth import get_password_hash
 from app.core.permissions import assert_can_assign_role, assert_same_org
@@ -46,27 +46,19 @@ async def invite_user(
     user = result.scalar_one_or_none()
     
     if user:
-        if str(user.org_id) == str(org_id):
+        # Only reject if user is ACTIVE and already in this org
+        if user.is_active and str(user.org_id) == str(org_id):
             raise ConflictError(f"User '{email}' is already a member of this organisation")
         
-        # Update existing user's org and role
+        # Re-activate if previously removed, or move from another org
         user.org_id = org_id
+        user.is_active = True
         # Never downgrade a super_admin to something lower
-        if user.role != "super_admin":
+        if user.role != ModelUserRole.super_admin:
             user.role = role
         logger.info(f"Updated existing user {email} org to {org_id}")
     else:
-        # Create user with a temporary password (they will reset it)
-        temp_password = f"invite-{uuid.uuid4().hex[:16]}"
-        user = User(
-            email=email,
-            full_name=email.split("@")[0],  # placeholder name
-            password_hash=get_password_hash(temp_password),
-            role=role,
-            org_id=org_id,
-            is_active=True,
-        )
-        db.add(user)
+        raise NotFoundError(f"No registered user found with email '{email}'. The user must register first.")
 
     try:
         await db.commit()
@@ -204,8 +196,9 @@ async def remove_user_from_org(
         key.is_active = False
         key.revoked_at = now
 
-    # Deactivate user
+    # Deactivate user and clear org membership
     target_user.is_active = False
+    target_user.org_id = None
     await db.commit()
 
     logger.info(
@@ -217,3 +210,39 @@ async def remove_user_from_org(
             "keys_revoked": len(active_keys),
         },
     )
+
+
+async def update_user_rate_limit(
+    db: AsyncSession,
+    org_id: uuid.UUID,
+    target_user_id: uuid.UUID,
+    rate_limit_rpm: int | None,
+    requesting_user: User,
+) -> User:
+    """
+    Update a user's rate limit within an organisation.
+    Raises NotFoundError if user not in this org.
+    """
+    result = await db.execute(
+        select(User).where(
+            User.id == target_user_id,
+            User.org_id == org_id,
+        )
+    )
+    target_user = result.scalar_one_or_none()
+    if not target_user:
+        raise NotFoundError("User not found in this organisation")
+
+    target_user.rate_limit_rpm = rate_limit_rpm
+    await db.commit()
+    await db.refresh(target_user)
+    logger.info(
+        "User rate limit updated",
+        extra={
+            "target_user_id": str(target_user_id),
+            "rate_limit_rpm": rate_limit_rpm,
+            "org_id": str(org_id),
+            "updated_by": str(requesting_user.id),
+        },
+    )
+    return target_user

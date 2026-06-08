@@ -24,10 +24,10 @@ export const ChatPage: React.FC = () => {
   const sessionsByUser = useChatStore((state) => state.sessionsByUser)
   const {
     currentSession,
-    streamingContent, isStreaming, error,
+    streamingContent, streamingSessionId, isStreaming, error,
     model, availableModels,
     newChat, selectSession, deleteSession,
-    setModel, sendMessage, loadModels, clearError, retryLastMessage,
+    setModel, sendMessage, loadModels, clearError, retryLastMessage, stopInference,
   } = useChatStore()
 
   const userId = user?.id || 'anonymous'
@@ -35,6 +35,9 @@ export const ChatPage: React.FC = () => {
   const active = currentSession()
   const messages = active?.messages ?? []
   const isNewChat = messages.length === 0
+  // Only show streaming content if this session owns the stream
+  const isStreamingThisChat = isStreaming && streamingSessionId === active?.id
+  const visibleStreamingContent = isStreamingThisChat ? streamingContent : ''
 
   // Dual state modes: 'chat' | 'chats-list'
   const [viewMode, setViewMode] = useState<'chat' | 'chats-list'>('chat')
@@ -493,7 +496,9 @@ export const ChatPage: React.FC = () => {
                   <div style={{ width: '100%' }}>
                     <InputField
                       onSend={sendMessage}
+                      onStop={stopInference}
                       disabled={isStreaming}
+                      isStreaming={isStreaming}
                       placeholder="How can I help you today?"
                       value={inputValue}
                       onChange={setInputValue}
@@ -574,8 +579,8 @@ export const ChatPage: React.FC = () => {
                   <div style={{ width: '100%', maxWidth: '850px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <MessageList
                       messages={messages}
-                      streamingContent={streamingContent}
-                      isStreaming={isStreaming}
+                      streamingContent={visibleStreamingContent}
+                      isStreaming={isStreamingThisChat}
                       onRetry={retryLastMessage}
                     />
                   </div>
@@ -594,7 +599,9 @@ export const ChatPage: React.FC = () => {
                   <div style={{ width: '100%', maxWidth: '850px', display: 'flex', flexDirection: 'column' }}>
                     <InputField
                       onSend={sendMessage}
+                      onStop={stopInference}
                       disabled={isStreaming}
+                      isStreaming={isStreamingThisChat}
                       placeholder={`Message ${model}...`}
                       value={inputValue}
                       onChange={setInputValue}

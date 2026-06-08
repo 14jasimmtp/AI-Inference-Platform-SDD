@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react'
 
 interface Props {
   onSend: (message: string) => void
+  onStop?: () => void
   disabled: boolean
+  isStreaming?: boolean
   placeholder?: string
   modelPicker?: React.ReactNode
   value?: string
@@ -11,7 +13,9 @@ interface Props {
 
 export const InputField: React.FC<Props> = ({
   onSend,
+  onStop,
   disabled,
+  isStreaming = false,
   placeholder = 'Send a message...',
   modelPicker,
   value: controlledValue,
@@ -50,6 +54,8 @@ export const InputField: React.FC<Props> = ({
       ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'
     }
   }
+
+  const showStopButton = isStreaming && onStop
 
   return (
     <div 
@@ -106,52 +112,89 @@ export const InputField: React.FC<Props> = ({
         paddingTop: '10px',
         marginTop: '2px'
       }}>
-        {/* Right Side: Model Picker, Send Button */}
+        {/* Right Side: Model Picker, Send/Stop Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {modelPicker}
 
-          {/* Send message button */}
-          <button
-            id="send-btn"
-            onClick={handleSubmit}
-            disabled={disabled || !value.trim()}
-            className="claude-focus-ring"
-            style={{
-              width: '32px', height: '32px',
-              background: (disabled || !value.trim()) ? 'var(--color-border-subtle)' : 'var(--color-text-primary)',
-              color: 'var(--color-bg-canvas)',
-              border: 'none',
-              borderRadius: '50%',
-              cursor: (disabled || !value.trim()) ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-              transition: 'var(--transition-smooth)',
-              opacity: (disabled || !value.trim()) ? 0.4 : 1
-            }}
-            onMouseEnter={(e) => {
-              if (!disabled && value.trim()) {
-                e.currentTarget.style.transform = 'scale(1.05)'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!disabled && value.trim()) {
+          {showStopButton ? (
+            /* Stop inference button */
+            <button
+              id="stop-btn"
+              onClick={onStop}
+              className="claude-focus-ring"
+              style={{
+                width: '32px', height: '32px',
+                background: 'var(--color-text-primary)',
+                color: 'var(--color-bg-canvas)',
+                border: 'none',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'var(--transition-smooth)',
+                animation: 'pulse-stop 1.5s ease-in-out infinite',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.background = '#ef4444'
+              }}
+              onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'scale(1)'
-              }
-            }}
-            aria-label="Send message"
-          >
-            {disabled ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ width: '14px', height: '14px' }}>
+                e.currentTarget.style.background = 'var(--color-text-primary)'
+              }}
+              aria-label="Stop generating"
+              title="Stop generating"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '12px', height: '12px' }}>
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               </svg>
-            ) : (
+            </button>
+          ) : (
+            /* Send message button */
+            <button
+              id="send-btn"
+              onClick={handleSubmit}
+              disabled={disabled || !value.trim()}
+              className="claude-focus-ring"
+              style={{
+                width: '32px', height: '32px',
+                background: (disabled || !value.trim()) ? 'var(--color-border-subtle)' : 'var(--color-text-primary)',
+                color: 'var(--color-bg-canvas)',
+                border: 'none',
+                borderRadius: '50%',
+                cursor: (disabled || !value.trim()) ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'var(--transition-smooth)',
+                opacity: (disabled || !value.trim()) ? 0.4 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!disabled && value.trim()) {
+                  e.currentTarget.style.transform = 'scale(1.05)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!disabled && value.trim()) {
+                  e.currentTarget.style.transform = 'scale(1)'
+                }
+              }}
+              aria-label="Send message"
+            >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '14px', height: '14px' }}>
                 <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            )}
-          </button>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Stop button pulse animation */}
+      <style>{`
+        @keyframes pulse-stop {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.15); }
+          50% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
+        }
+      `}</style>
     </div>
   )
 }

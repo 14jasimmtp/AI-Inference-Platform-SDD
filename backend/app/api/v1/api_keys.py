@@ -37,6 +37,10 @@ async def create_key(
     owner_user_id = body.user_id if body.user_id else current_user.id
     org_id = current_user.org_id
 
+    if not org_id:
+        from app.exceptions import ValidationError
+        raise ValidationError("You must belong to an organisation to create API keys")
+
     api_key, plaintext = await api_key_service.create_api_key(
         db,
         name=body.name,
