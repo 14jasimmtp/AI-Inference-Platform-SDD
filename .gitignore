@@ -51,3 +51,7 @@ logs/
 # Temporary files
 *.tmp
 *.bak
+
+# Kubernetes sensitive files
+kubernetes/secrets.yaml
+kubernetes/configmap.yaml

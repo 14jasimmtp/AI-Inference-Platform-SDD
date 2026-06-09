@@ -1,0 +1,86 @@
+# Helm values for kube-prometheus-stack
+# Install with:
+# helm install prometheus-stack prometheus-community/kube-prometheus-stack \
+#   -f observability/prometheus-values.yaml -n ai-platform --create-namespace
+
+prometheus:
+  prometheusSpec:
+    # Discover ServiceMonitors in all namespaces labelled 'release: prometheus-stack'
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchLabels:
+        release: prometheus-stack
+    serviceMonitorNamespaceSelector: {}
+
+    # Resource limits tuned for Minikube with 3GB RAM
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+    # Scrape host Ollama running on Windows via host.minikube.internal
+    additionalScrapeConfigs:
+      - job_name: 'ollama-host'
+        static_configs:
+          - targets: ['host.minikube.internal:11434']
+            labels:
+              app: 'ollama'
+        metrics_path: '/metrics'
+        scrape_timeout: 10s
+
+grafana:
+  adminPassword: admin
+
+  # Sidecar auto-loads ConfigMaps labelled 'grafana_dashboard=1' as dashboards
+  # and 'grafana_datasource=1' as datasources
+  sidecar:
+    image:
+      repository: ghcr.io/kiwigrid/k8s-sidecar
+      tag: "2.7.3"
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+      searchNamespace: ALL
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+
+  persistence:
+    enabled: false
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+alertmanager:
+  enabled: false
+
+# Reduce kube-state-metrics resource footprint on Minikube
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# Reduce node-exporter resource footprint on Minikube
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

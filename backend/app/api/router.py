@@ -1,5 +1,8 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, api_keys, inference, orgs, users
+from app.modules.auth import router as auth
+from app.modules.api_keys import router as api_keys
+from app.modules.orgs import router as orgs
+from app.modules.users import router as users
 
 router = APIRouter(prefix="/api")
 

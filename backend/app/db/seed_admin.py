@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 from app.db.session import AsyncSessionLocal
-from app.models.user import User, UserRole
+from app.modules.users.models import User, UserRole
 from app.core.auth import get_password_hash
 
 async def seed_superuser():

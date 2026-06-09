@@ -1,0 +1,252 @@
+# HELP python_gc_objects_collected_total Objects collected during gc
+# TYPE python_gc_objects_collected_total counter
+python_gc_objects_collected_total{generation="0"} 71763.0
+python_gc_objects_collected_total{generation="1"} 14615.0
+python_gc_objects_collected_total{generation="2"} 92.0
+# HELP python_gc_objects_uncollectable_total Uncollectable objects found during GC
+# TYPE python_gc_objects_uncollectable_total counter
+python_gc_objects_uncollectable_total{generation="0"} 0.0
+python_gc_objects_uncollectable_total{generation="1"} 0.0
+python_gc_objects_uncollectable_total{generation="2"} 0.0
+# HELP python_gc_collections_total Number of times this generation was collected
+# TYPE python_gc_collections_total counter
+python_gc_collections_total{generation="0"} 427.0
+python_gc_collections_total{generation="1"} 38.0
+python_gc_collections_total{generation="2"} 2.0
+# HELP python_info Python platform information
+# TYPE python_info gauge
+python_info{implementation="CPython",major="3",minor="12",patchlevel="13",version="3.12.13"} 1.0
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 1.96214784e+08
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 4.599808e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.78046908394e+09
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 33.58
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 11.0
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 1024.0
+# HELP inference_requests_total Total number of inference requests
+# TYPE inference_requests_total counter
+inference_requests_total{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",status="success",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 6.0
+# HELP inference_requests_created Total number of inference requests
+# TYPE inference_requests_created gauge
+inference_requests_created{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",status="success",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 1.7804698245133822e+09
+# HELP inference_duration_seconds Duration of inference requests in seconds
+# TYPE inference_duration_seconds histogram
+inference_duration_seconds_bucket{le="0.5",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 0.0
+inference_duration_seconds_bucket{le="1.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 0.0
+inference_duration_seconds_bucket{le="2.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 0.0
+inference_duration_seconds_bucket{le="3.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 0.0
+inference_duration_seconds_bucket{le="5.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 0.0
+inference_duration_seconds_bucket{le="10.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 0.0
+inference_duration_seconds_bucket{le="30.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 0.0
+inference_duration_seconds_bucket{le="60.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 2.0
+inference_duration_seconds_bucket{le="120.0",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 6.0
+inference_duration_seconds_bucket{le="+Inf",model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 6.0
+inference_duration_seconds_count{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 6.0
+inference_duration_seconds_sum{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 389.29175662994385
+# HELP inference_duration_seconds_created Duration of inference requests in seconds
+# TYPE inference_duration_seconds_created gauge
+inference_duration_seconds_created{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 1.7804698245161648e+09
+# HELP inference_tokens_total Total tokens processed
+# TYPE inference_tokens_total counter
+inference_tokens_total{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",type="prompt",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 8577.0
+inference_tokens_total{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",type="completion",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 1295.0
+# HELP inference_tokens_created Total tokens processed
+# TYPE inference_tokens_created gauge
+inference_tokens_created{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",type="prompt",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 1.7804698245191321e+09
+inference_tokens_created{model="gemma2:2b-instruct-q4_K_M",org_id="unknown",type="completion",user_id="61fce899-5de3-4d24-8bfd-f44e61b2ac72"} 1.7804698245191593e+09
+# HELP auth_attempts_total Total authentication attempts
+# TYPE auth_attempts_total counter
+# HELP http_requests_total Total HTTP requests received
+# TYPE http_requests_total counter
+http_requests_total{method="OPTIONS",path="/api/v1/auth/register-login",status_code="200"} 1.0
+http_requests_total{method="POST",path="/api/v1/auth/register-login",status_code="200"} 1.0
+http_requests_total{method="OPTIONS",path="/api/v1/auth/me",status_code="200"} 5.0
+http_requests_total{method="GET",path="/api/v1/auth/me",status_code="200"} 2.0
+http_requests_total{method="OPTIONS",path="/v1/models",status_code="200"} 3.0
+http_requests_total{method="GET",path="/v1/models",status_code="200"} 4.0
+http_requests_total{method="OPTIONS",path="/v1/chat/completions",status_code="200"} 2.0
+http_requests_total{method="POST",path="/v1/chat/completions",status_code="200"} 6.0
+http_requests_total{method="POST",path="/v1/chat/completions",status_code="401"} 1.0
+http_requests_total{method="OPTIONS",path="/api/v1/auth/sso/google/callback",status_code="200"} 1.0
+http_requests_total{method="POST",path="/api/v1/auth/sso/google/callback",status_code="200"} 1.0
+# HELP http_requests_created Total HTTP requests received
+# TYPE http_requests_created gauge
+http_requests_created{method="OPTIONS",path="/api/v1/auth/register-login",status_code="200"} 1.7804697602155955e+09
+http_requests_created{method="POST",path="/api/v1/auth/register-login",status_code="200"} 1.7804697618506525e+09
+http_requests_created{method="OPTIONS",path="/api/v1/auth/me",status_code="200"} 1.7804697618801277e+09
+http_requests_created{method="GET",path="/api/v1/auth/me",status_code="200"} 1.7804697620137906e+09
+http_requests_created{method="OPTIONS",path="/v1/models",status_code="200"} 1.7804697620315177e+09
+http_requests_created{method="GET",path="/v1/models",status_code="200"} 1.7804697624737542e+09
+http_requests_created{method="OPTIONS",path="/v1/chat/completions",status_code="200"} 1.7804697656441438e+09
+http_requests_created{method="POST",path="/v1/chat/completions",status_code="200"} 1.7804697658406668e+09
+http_requests_created{method="POST",path="/v1/chat/completions",status_code="401"} 1.7804786057291043e+09
+http_requests_created{method="OPTIONS",path="/api/v1/auth/sso/google/callback",status_code="200"} 1.7804786133659027e+09
+http_requests_created{method="POST",path="/api/v1/auth/sso/google/callback",status_code="200"} 1.7804786141058602e+09
+# HELP http_request_duration_seconds HTTP request duration in seconds
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{le="0.005",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="0.01",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="0.025",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="0.05",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="0.1",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="0.25",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="0.5",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="1.0",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="2.5",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="5.0",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="10.0",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="+Inf",method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_count{method="OPTIONS",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_sum{method="OPTIONS",path="/api/v1/auth/register-login"} 0.004923066000628751
+http_request_duration_seconds_bucket{le="0.005",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="0.01",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="0.025",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="0.05",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="0.1",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="0.25",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="0.5",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="1.0",method="POST",path="/api/v1/auth/register-login"} 0.0
+http_request_duration_seconds_bucket{le="2.5",method="POST",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="5.0",method="POST",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="10.0",method="POST",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_bucket{le="+Inf",method="POST",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_count{method="POST",path="/api/v1/auth/register-login"} 1.0
+http_request_duration_seconds_sum{method="POST",path="/api/v1/auth/register-login"} 1.6219948739999381
+http_request_duration_seconds_bucket{le="0.005",method="OPTIONS",path="/api/v1/auth/me"} 3.0
+http_request_duration_seconds_bucket{le="0.01",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="0.025",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="0.05",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="0.1",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="0.25",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="0.5",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="1.0",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="2.5",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="5.0",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="10.0",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_bucket{le="+Inf",method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_count{method="OPTIONS",path="/api/v1/auth/me"} 5.0
+http_request_duration_seconds_sum{method="OPTIONS",path="/api/v1/auth/me"} 0.023393116000079317
+http_request_duration_seconds_bucket{le="0.005",method="GET",path="/api/v1/auth/me"} 0.0
+http_request_duration_seconds_bucket{le="0.01",method="GET",path="/api/v1/auth/me"} 1.0
+http_request_duration_seconds_bucket{le="0.025",method="GET",path="/api/v1/auth/me"} 1.0
+http_request_duration_seconds_bucket{le="0.05",method="GET",path="/api/v1/auth/me"} 1.0
+http_request_duration_seconds_bucket{le="0.1",method="GET",path="/api/v1/auth/me"} 1.0
+http_request_duration_seconds_bucket{le="0.25",method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_bucket{le="0.5",method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_bucket{le="1.0",method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_bucket{le="2.5",method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_bucket{le="5.0",method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_bucket{le="10.0",method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_bucket{le="+Inf",method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_count{method="GET",path="/api/v1/auth/me"} 2.0
+http_request_duration_seconds_sum{method="GET",path="/api/v1/auth/me"} 0.1347568669989414
+http_request_duration_seconds_bucket{le="0.005",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="0.01",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="0.025",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="0.05",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="0.1",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="0.25",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="0.5",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="1.0",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="2.5",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="5.0",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="10.0",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="+Inf",method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_count{method="OPTIONS",path="/v1/models"} 3.0
+http_request_duration_seconds_sum{method="OPTIONS",path="/v1/models"} 0.0011813410019385628
+http_request_duration_seconds_bucket{le="0.005",method="GET",path="/v1/models"} 0.0
+http_request_duration_seconds_bucket{le="0.01",method="GET",path="/v1/models"} 0.0
+http_request_duration_seconds_bucket{le="0.025",method="GET",path="/v1/models"} 2.0
+http_request_duration_seconds_bucket{le="0.05",method="GET",path="/v1/models"} 2.0
+http_request_duration_seconds_bucket{le="0.1",method="GET",path="/v1/models"} 2.0
+http_request_duration_seconds_bucket{le="0.25",method="GET",path="/v1/models"} 3.0
+http_request_duration_seconds_bucket{le="0.5",method="GET",path="/v1/models"} 4.0
+http_request_duration_seconds_bucket{le="1.0",method="GET",path="/v1/models"} 4.0
+http_request_duration_seconds_bucket{le="2.5",method="GET",path="/v1/models"} 4.0
+http_request_duration_seconds_bucket{le="5.0",method="GET",path="/v1/models"} 4.0
+http_request_duration_seconds_bucket{le="10.0",method="GET",path="/v1/models"} 4.0
+http_request_duration_seconds_bucket{le="+Inf",method="GET",path="/v1/models"} 4.0
+http_request_duration_seconds_count{method="GET",path="/v1/models"} 4.0
+http_request_duration_seconds_sum{method="GET",path="/v1/models"} 0.6971778059996723
+http_request_duration_seconds_bucket{le="0.005",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="0.01",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="0.025",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="0.05",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="0.1",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="0.25",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="0.5",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="1.0",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="2.5",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="5.0",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="10.0",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_bucket{le="+Inf",method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_count{method="OPTIONS",path="/v1/chat/completions"} 2.0
+http_request_duration_seconds_sum{method="OPTIONS",path="/v1/chat/completions"} 0.00033198800156242214
+http_request_duration_seconds_bucket{le="0.005",method="POST",path="/v1/chat/completions"} 0.0
+http_request_duration_seconds_bucket{le="0.01",method="POST",path="/v1/chat/completions"} 0.0
+http_request_duration_seconds_bucket{le="0.025",method="POST",path="/v1/chat/completions"} 0.0
+http_request_duration_seconds_bucket{le="0.05",method="POST",path="/v1/chat/completions"} 0.0
+http_request_duration_seconds_bucket{le="0.1",method="POST",path="/v1/chat/completions"} 1.0
+http_request_duration_seconds_bucket{le="0.25",method="POST",path="/v1/chat/completions"} 3.0
+http_request_duration_seconds_bucket{le="0.5",method="POST",path="/v1/chat/completions"} 5.0
+http_request_duration_seconds_bucket{le="1.0",method="POST",path="/v1/chat/completions"} 7.0
+http_request_duration_seconds_bucket{le="2.5",method="POST",path="/v1/chat/completions"} 7.0
+http_request_duration_seconds_bucket{le="5.0",method="POST",path="/v1/chat/completions"} 7.0
+http_request_duration_seconds_bucket{le="10.0",method="POST",path="/v1/chat/completions"} 7.0
+http_request_duration_seconds_bucket{le="+Inf",method="POST",path="/v1/chat/completions"} 7.0
+http_request_duration_seconds_count{method="POST",path="/v1/chat/completions"} 7.0
+http_request_duration_seconds_sum{method="POST",path="/v1/chat/completions"} 2.482219661997078
+http_request_duration_seconds_bucket{le="0.005",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="0.01",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="0.025",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="0.05",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="0.1",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="0.25",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="0.5",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="1.0",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="2.5",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="5.0",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="10.0",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="+Inf",method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_count{method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_sum{method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 0.0005940730006841477
+http_request_duration_seconds_bucket{le="0.005",method="POST",path="/api/v1/auth/sso/google/callback"} 0.0
+http_request_duration_seconds_bucket{le="0.01",method="POST",path="/api/v1/auth/sso/google/callback"} 0.0
+http_request_duration_seconds_bucket{le="0.025",method="POST",path="/api/v1/auth/sso/google/callback"} 0.0
+http_request_duration_seconds_bucket{le="0.05",method="POST",path="/api/v1/auth/sso/google/callback"} 0.0
+http_request_duration_seconds_bucket{le="0.1",method="POST",path="/api/v1/auth/sso/google/callback"} 0.0
+http_request_duration_seconds_bucket{le="0.25",method="POST",path="/api/v1/auth/sso/google/callback"} 0.0
+http_request_duration_seconds_bucket{le="0.5",method="POST",path="/api/v1/auth/sso/google/callback"} 0.0
+http_request_duration_seconds_bucket{le="1.0",method="POST",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="2.5",method="POST",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="5.0",method="POST",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="10.0",method="POST",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_bucket{le="+Inf",method="POST",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_count{method="POST",path="/api/v1/auth/sso/google/callback"} 1.0
+http_request_duration_seconds_sum{method="POST",path="/api/v1/auth/sso/google/callback"} 0.7295652009997866
+# HELP http_request_duration_seconds_created HTTP request duration in seconds
+# TYPE http_request_duration_seconds_created gauge
+http_request_duration_seconds_created{method="OPTIONS",path="/api/v1/auth/register-login"} 1.7804697602187543e+09
+http_request_duration_seconds_created{method="POST",path="/api/v1/auth/register-login"} 1.780469761850687e+09
+http_request_duration_seconds_created{method="OPTIONS",path="/api/v1/auth/me"} 1.780469761880169e+09
+http_request_duration_seconds_created{method="GET",path="/api/v1/auth/me"} 1.780469762013816e+09
+http_request_duration_seconds_created{method="OPTIONS",path="/v1/models"} 1.7804697620315413e+09
+http_request_duration_seconds_created{method="GET",path="/v1/models"} 1.7804697624737816e+09
+http_request_duration_seconds_created{method="OPTIONS",path="/v1/chat/completions"} 1.7804697656441684e+09
+http_request_duration_seconds_created{method="POST",path="/v1/chat/completions"} 1.7804697658407035e+09
+http_request_duration_seconds_created{method="OPTIONS",path="/api/v1/auth/sso/google/callback"} 1.7804786133675356e+09
+http_request_duration_seconds_created{method="POST",path="/api/v1/auth/sso/google/callback"} 1.7804786141058896e+09
+# HELP http_active_connections Number of active HTTP connections currently being handled
+# TYPE http_active_connections gauge
+http_active_connections 0.0

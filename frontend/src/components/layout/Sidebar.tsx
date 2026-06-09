@@ -4,15 +4,6 @@ import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
 import { useTheme } from '../../hooks/useTheme'
 
-const formatDate = (ts: number) => {
-  const d = new Date(ts)
-  const now = new Date()
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000)
-  if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return d.toLocaleDateString([], { weekday: 'short' })
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-}
 
 const getInitials = (name?: string) => {
   if (!name) return '?'
@@ -31,12 +22,12 @@ interface SidebarProps {
   onOpenSearch: () => void
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  isOpen, 
-  onToggle, 
-  activeTab, 
-  onChangeTab, 
-  onOpenSearch 
+export const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  onToggle,
+  activeTab,
+  onChangeTab,
+  onOpenSearch
 }) => {
   const navigate = useNavigate()
   const { logout, user } = useAuthStore()
@@ -65,9 +56,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   if (!isOpen) {
     // ── COLLAPSED SIDEBAR (64px Wide) ──
     return (
-      <aside className="sidebar claude-sans-control" style={{ 
-        background: 'var(--color-bg-card)', 
-        borderColor: 'var(--color-border-subtle)', 
+      <aside className="sidebar claude-sans-control" style={{
+        background: 'var(--color-bg-card)',
+        borderColor: 'var(--color-border-subtle)',
         borderRight: '1px solid var(--color-border-subtle)',
         transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease',
         display: 'flex',
@@ -81,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         zIndex: 50
       }}>
         {/* Toggle Button at very top */}
-        <button 
+        <button
           onClick={onToggle}
           className="claude-focus-ring"
           style={{
@@ -110,13 +101,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Center Pill Circle New Chat Button */}
-        <button 
+        <button
           onClick={() => {
             newChat()
             onChangeTab('chat')
-          }} 
-          className="claude-focus-ring" 
-          style={{ 
+          }}
+          className="claude-focus-ring"
+          style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'var(--color-bg-canvas)',
             border: '1px solid var(--color-border-subtle)',
@@ -147,18 +138,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Dynamic Navigation Icons - ONLY Search and Chats */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center', width: '100%' }}>
           {/* Search Icon */}
-          <button 
+          <button
             onClick={onOpenSearch}
             className="claude-focus-ring"
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              color: 'var(--color-text-secondary)', 
-              cursor: 'pointer', 
-              padding: '8px', 
-              borderRadius: '8px', 
-              display: 'flex', 
-              alignItems: 'center', 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--color-text-secondary)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               transition: 'var(--transition-smooth)'
             }}
@@ -172,18 +163,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {/* Chats Bubble */}
-          <button 
+          <button
             onClick={() => onChangeTab('chats-list')}
             className="claude-focus-ring"
-            style={{ 
-              background: activeTab === 'chats-list' ? 'var(--color-accent-amber-glow)' : 'transparent', 
-              border: 'none', 
-              color: activeTab === 'chats-list' ? 'var(--color-accent-amber)' : 'var(--color-text-secondary)', 
-              cursor: 'pointer', 
-              padding: '8px', 
-              borderRadius: '8px', 
-              display: 'flex', 
-              alignItems: 'center', 
+            style={{
+              background: activeTab === 'chats-list' ? 'var(--color-accent-amber-glow)' : 'transparent',
+              border: 'none',
+              color: activeTab === 'chats-list' ? 'var(--color-accent-amber)' : 'var(--color-text-secondary)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               transition: 'var(--transition-smooth)'
             }}
@@ -204,11 +195,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Footer Actions */}
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
           {/* Light/Dark Toggle */}
-          <button 
-            onClick={toggleTheme} 
+          <button
+            onClick={toggleTheme}
             className="claude-focus-ring"
-            style={{ 
-              padding: '8px', border: 'none', background: 'transparent', cursor: 'pointer', 
+            style={{
+              padding: '8px', border: 'none', background: 'transparent', cursor: 'pointer',
               color: 'var(--color-text-secondary)', borderRadius: '8px', transition: 'var(--transition-smooth)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
@@ -220,11 +211,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {/* Settings cog */}
-          <button 
-            onClick={() => navigate('/settings')} 
+          <button
+            onClick={() => navigate('/settings')}
             className="claude-focus-ring"
-            style={{ 
-              padding: '8px', border: 'none', background: 'transparent', cursor: 'pointer', 
+            style={{
+              padding: '8px', border: 'none', background: 'transparent', cursor: 'pointer',
               color: 'var(--color-text-secondary)', borderRadius: '8px', transition: 'var(--transition-smooth)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
@@ -236,9 +227,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {/* MJ Initials Avatar Bubble */}
-          <div 
+          <div
             onClick={handleLogout}
-            style={{ 
+            style={{
               width: '38px', height: '38px', borderRadius: '50%',
               background: 'var(--color-text-primary)', color: 'var(--color-bg-canvas)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -266,9 +257,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // ── EXPANDED SIDEBAR (260px Wide) ──
   return (
-    <aside className="sidebar claude-sans-control" style={{ 
-      background: 'var(--color-bg-card)', 
-      borderRight: '1px solid var(--color-border-subtle)', 
+    <aside className="sidebar claude-sans-control" style={{
+      background: 'var(--color-bg-card)',
+      borderRight: '1px solid var(--color-border-subtle)',
       transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease',
       display: 'flex',
       flexDirection: 'column',
@@ -285,9 +276,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="logo-icon" style={{ fontSize: '1.3rem' }}>⚡</span>
           <span className="claude-serif-title" style={{ fontSize: '1.1rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>AI Inference</span>
         </div>
-        
+
         {/* Toggle Button to collapse */}
-        <button 
+        <button
           onClick={onToggle}
           className="claude-focus-ring"
           style={{
@@ -319,16 +310,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Main navigation stack */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {/* + New chat button */}
-        <button 
-          id="new-chat-btn" 
+        <button
+          id="new-chat-btn"
           onClick={() => {
             newChat()
             onChangeTab('chat')
-          }} 
-          className="claude-focus-ring" 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          }}
+          className="claude-focus-ring"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '12px',
             background: 'transparent',
             border: 'none',
@@ -363,12 +354,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* 🔍 Search trigger button */}
-        <button 
+        <button
           onClick={onOpenSearch}
           className="claude-focus-ring"
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '12px',
             background: 'transparent',
             border: 'none',
@@ -391,12 +382,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* 💬 Chats trigger button */}
-        <button 
+        <button
           onClick={() => onChangeTab('chats-list')}
           className="claude-focus-ring"
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '12px',
             background: activeTab === 'chats-list' ? 'var(--color-accent-amber-glow)' : 'transparent',
             border: 'none',
@@ -446,8 +437,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             key={session.id}
             className="sidebar-history-row claude-focus-ring"
             style={{
-              display: 'flex', 
-              alignItems: 'center', 
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'space-between',
               padding: '10px 12px',
               borderRadius: '8px',
@@ -471,11 +462,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             }}
           >
-            <span className="claude-sans-control" style={{ 
-              fontSize: '0.9rem', 
+            <span className="claude-sans-control" style={{
+              fontSize: '0.9rem',
               color: (session.id === currentSessionId && activeTab === 'chat') ? 'var(--color-accent-amber)' : 'var(--color-text-primary)',
-              whiteSpace: 'nowrap', 
-              overflow: 'hidden', 
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
               textOverflow: 'ellipsis',
               transition: 'color 0.2s ease',
               fontWeight: (session.id === currentSessionId && activeTab === 'chat') ? 500 : 400,
@@ -484,9 +475,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}>
               {session.title}
             </span>
-            
+
             <button
-              onClick={(e) => { 
+              onClick={(e) => {
                 e.stopPropagation()
                 if (window.confirm('Delete this chat?')) {
                   deleteSession(session.id)
@@ -494,12 +485,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
               title="Delete chat"
               style={{
-                background: 'none', 
-                border: 'none', 
-                color: 'var(--color-text-secondary)', 
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-secondary)',
                 cursor: 'pointer',
-                display: 'flex', 
-                alignItems: 'center', 
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 padding: '4px',
                 borderRadius: '4px',
@@ -521,12 +512,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* User Footer block with details */}
-      <div className="sidebar-footer" style={{ 
-        marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--color-border-subtle)', 
-        display: 'flex', alignItems: 'center', gap: '10px' 
+      <div className="sidebar-footer" style={{
+        marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--color-border-subtle)',
+        display: 'flex', alignItems: 'center', gap: '10px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-          <div style={{ 
+          <div style={{
             width: '34px', height: '34px', borderRadius: '50%',
             background: 'var(--color-text-primary)', color: 'var(--color-bg-canvas)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -545,11 +536,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div style={{ display: 'flex', gap: '2px' }}>
           {/* Theme Toggle Button */}
-          <button 
-            onClick={toggleTheme} 
+          <button
+            onClick={toggleTheme}
             className="claude-focus-ring"
-            style={{ 
-              padding: '6px', border: 'none', background: 'transparent', cursor: 'pointer', 
+            style={{
+              padding: '6px', border: 'none', background: 'transparent', cursor: 'pointer',
               color: 'var(--color-text-secondary)', borderRadius: '6px', transition: 'var(--transition-smooth)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
@@ -565,13 +556,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             {isDark ? '☀️' : '🌙'}
           </button>
-          
+
           {/* Settings Button */}
-          <button 
-            onClick={() => navigate('/settings')} 
+          <button
+            onClick={() => navigate('/settings')}
             className="claude-focus-ring"
-            style={{ 
-              padding: '6px', border: 'none', background: 'transparent', cursor: 'pointer', 
+            style={{
+              padding: '6px', border: 'none', background: 'transparent', cursor: 'pointer',
               color: 'var(--color-text-secondary)', borderRadius: '6px', transition: 'var(--transition-smooth)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
@@ -587,14 +578,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             ⚙️
           </button>
-          
+
           {/* Logout Button */}
-          <button 
-            id="logout-btn" 
-            onClick={handleLogout} 
+          <button
+            id="logout-btn"
+            onClick={handleLogout}
             className="claude-focus-ring"
-            style={{ 
-              padding: '6px', border: 'none', background: 'transparent', cursor: 'pointer', 
+            style={{
+              padding: '6px', border: 'none', background: 'transparent', cursor: 'pointer',
               color: 'var(--color-text-secondary)', borderRadius: '6px', transition: 'var(--transition-smooth)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}

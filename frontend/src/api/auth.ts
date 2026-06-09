@@ -20,9 +20,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
-      if (!window.location.pathname.startsWith('/auth')) {
-        window.location.href = '/auth'
+      localStorage.removeItem('auth-storage')
+      if (!window.location.pathname.startsWith('/login') && window.location.pathname !== '/mock-google-login') {
+        window.location.href = '/login'
       }
     }
     return Promise.reject(error)
@@ -36,7 +36,10 @@ export const authApi = {
   login: (email: string, password: string) =>
     api.post('/api/v1/auth/login', { email, password }),
   me: () => api.get('/api/v1/auth/me'),
-  rateLimit: () => api.get('/api/v1/auth/rate-limit'),
+  rateLimit: (testRpm?: number) => {
+    const headers = testRpm ? { 'x-test-rate-limit-rpm': String(testRpm) } : undefined
+    return api.get('/api/v1/auth/rate-limit', { headers })
+  },
   
   // Feature Phase 3 Extensions
   checkAccess: (email: string) =>

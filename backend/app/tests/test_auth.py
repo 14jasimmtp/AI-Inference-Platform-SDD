@@ -3,7 +3,7 @@ import uuid
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
 from app.main import app
-from app.services.auth_service import AuthService
+from app.modules.auth.service import AuthService
 
 class TestAuth(unittest.TestCase):
     def setUp(self):

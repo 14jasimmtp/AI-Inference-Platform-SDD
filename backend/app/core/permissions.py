@@ -10,7 +10,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_current_user
 from app.exceptions import ForbiddenError
-from app.models.user import User
+from app.modules.users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ _ROLE_HIERARCHY_BY_VALUE = {
 
 ASSIGNABLE_ROLES_BY_ROLE = {
     "super_admin": {"org_admin", "team_lead", "user"},
-    "org_admin":   {"team_lead", "user"},
+    "org_admin":   {"org_admin", "team_lead", "user"},
     "team_lead":   set(),
     "user":        set(),
 }

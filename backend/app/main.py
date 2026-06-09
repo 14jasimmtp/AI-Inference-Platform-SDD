@@ -7,8 +7,9 @@ from app.logging_config import setup_logging
 from app.config import settings
 from app.exceptions import AppError
 from app.api.router import router
-from app.api.v1 import inference
-from app.core.metrics import metrics_router
+from app.modules.inference import router as inference_router
+from app.core.metrics import metrics_router, PrometheusMiddleware
+from app.core.middleware import RequestResponseLoggingMiddleware, SecurityHeadersMiddleware, LimitUploadSizeMiddleware
 from app.db.setup import setup_db
 
 # Setup structured logging first
@@ -47,6 +48,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Prometheus HTTP instrumentation middleware (auto-tracks all routes)
+app.add_middleware(PrometheusMiddleware)
+
+
+app.add_middleware(RequestResponseLoggingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(LimitUploadSizeMiddleware, max_upload_size=5 * 1024 * 1024)
+
 # Global exception handler for AppError hierarchy
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
@@ -77,7 +86,7 @@ async def health():
 
 # Mount routers
 app.include_router(router)                        # /api/v1/auth, /api/v1/api-keys
-app.include_router(inference.router)              # /v1/chat/completions, /v1/models
+app.include_router(inference_router.router)       # /v1/chat/completions, /v1/models
 app.include_router(metrics_router)                # /metrics (internal only, not via Traefik)
 
 logger.info("Application initialized")

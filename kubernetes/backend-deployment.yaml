@@ -1,0 +1,159 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ai-platform
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: ai-inference-backend:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8000
+              name: apiport
+          env:
+            # Secrets
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: redis-url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: jwt-secret
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: google-client-id
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: smtp-password
+
+            # ConfigMap values
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: ENVIRONMENT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: LOG_LEVEL
+            - name: CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: CORS_ORIGINS
+            - name: PROMETHEUS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: PROMETHEUS_ENABLED
+            - name: OLLAMA_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: OLLAMA_BASE_URL
+            - name: OLLAMA_DEFAULT_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: OLLAMA_DEFAULT_MODEL
+            - name: OLLAMA_NUM_PARALLEL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: OLLAMA_NUM_PARALLEL
+            - name: OLLAMA_MAX_LOADED_MODELS
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: OLLAMA_MAX_LOADED_MODELS
+            - name: SMTP_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: SMTP_HOST
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: SMTP_PORT
+            - name: SMTP_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: SMTP_USERNAME
+            - name: SMTP_USE_TLS
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: SMTP_USE_TLS
+            - name: SMTP_FROM_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: SMTP_FROM_EMAIL
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: FRONTEND_URL
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+      # Optional hostAliases for resolving host.docker.internal locally
+      # Uncomment and configure with your machine's gateway/host IP if needed.
+      # hostAliases:
+      #   - ip: "192.168.65.254" # Default gateway for Docker Desktop (WSL)
+      #     hostnames:
+      #       - "host.docker.internal"

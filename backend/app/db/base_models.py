@@ -1,5 +1,5 @@
-from app.models.base import Base
-from app.models.user import User
-from app.models.api_key import ApiKey
-from app.models.usage_log import UsageLog, ModelRegistry
-from app.models.organisation import Organisation
+from app.db.base import Base
+from app.modules.users.models import User
+from app.modules.api_keys.models import ApiKey
+from app.modules.inference.models import UsageLog, ModelRegistry
+from app.modules.orgs.models import Organisation

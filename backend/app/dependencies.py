@@ -6,8 +6,8 @@ from jose import jwt, JWTError
 from app.db.session import get_db
 from app.config import settings
 from app.exceptions import UnauthorizedError
-from app.models.user import User
-from app.models.api_key import ApiKey
+from app.modules.users.models import User
+from app.modules.api_keys.models import ApiKey
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,8 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
         raise UnauthorizedError("User not found or deactivated")
+    if not user.is_verified:
+        raise UnauthorizedError("Email not verified")
     return user
 
 async def get_api_key_user(
@@ -43,7 +45,7 @@ async def get_api_key_user(
     db: AsyncSession = Depends(get_db),
 ) -> tuple[User, ApiKey]:
     """Authenticate via API key. Returns (user, api_key) or raises UnauthorizedError."""
-    from app.services.api_key_service import ApiKeyService
+    from app.modules.api_keys.service import ApiKeyService
     from app.core.auth import hash_api_key
 
     if not credentials:

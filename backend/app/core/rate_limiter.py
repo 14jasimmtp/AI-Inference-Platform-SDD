@@ -96,8 +96,8 @@ class RateLimiter:
                 "reset": retry_after
             }
         except (redis.RedisError, ConnectionError) as e:
-            logger.warning(f"Redis error in rate limiter: {e}. Allowing request.")
-            return {"limit": rpm, "remaining": rpm, "reset": 0}
+            logger.error(f"Redis error in rate limiter: {e}. Failing closed.")
+            raise RateLimitError(message="Service temporarily unavailable due to high load", details={"retry_after": 10})
 
     async def peek_rate_limit(self, key_id: str, rpm: int):
         if not self.enabled:
