@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: ai-platform
+data:
+  # Database Configuration
+  POSTGRES_USER: "postgres"
+  POSTGRES_DB: "inference_platform"
+
+  # General settings
+  ENVIRONMENT: "development"
+  LOG_LEVEL: "INFO"
+  CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+  PROMETHEUS_ENABLED: "true"
+
+  # Inference configuration
+  OLLAMA_BASE_URL: "http://host.minikube.internal:11435"
+  OLLAMA_DEFAULT_MODEL: "llama3.2:3b-instruct-q4_K_M"
+  OLLAMA_NUM_PARALLEL: "10"
+  OLLAMA_MAX_LOADED_MODELS: "4"
+
+  # SMTP Configuration
+  SMTP_HOST: "smtp.gmail.com"
+  SMTP_PORT: "587"
+  SMTP_USERNAME: "inferenceplatform@gmail.com"
+  SMTP_USE_TLS: "true"
+  SMTP_FROM_EMAIL: "inferenceplatform@gmail.com"
+  FRONTEND_URL: "http://localhost:3000"
+
+  # Frontend Specific Configurations
+  VITE_API_BASE_URL: "http://localhost:8000"
