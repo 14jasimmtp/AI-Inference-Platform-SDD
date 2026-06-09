@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter
 from app.modules.auth import router as auth
 from app.modules.api_keys import router as api_keys

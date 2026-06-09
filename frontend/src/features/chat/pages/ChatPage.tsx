@@ -71,12 +71,12 @@ export const ChatPage: React.FC = () => {
   const hour = new Date().getHours()
   const displayName = user?.full_name ? user.full_name.trim().split(/\s+/)[0] : 'Jasim'
   let greetingTime = 'Hello'
-  let greetingIcon = '✨'
-  if (hour < 12) { greetingTime = 'Morning'; greetingIcon = '🌅' }
-  else if (hour < 17) { greetingTime = 'Afternoon'; greetingIcon = '🍊' }
-  else { greetingTime = 'Evening'; greetingIcon = '🌙' }
+  let greetingLabel = 'Start'
+  if (hour < 12) { greetingTime = 'Morning'; greetingLabel = 'AM' }
+  else if (hour < 17) { greetingTime = 'Afternoon'; greetingLabel = 'PM' }
+  else { greetingTime = 'Evening'; greetingLabel = 'PM' }
 
-  // ── SEARCH LOGIC (Matches titles & message content dynamically) ──
+  // Search logic matches titles and message content dynamically.
   const getSearchResults = (): ChatSession[] => {
     if (!searchQuery.trim()) return []
     const q = searchQuery.toLowerCase()
@@ -90,7 +90,7 @@ export const ChatPage: React.FC = () => {
     })
   }
 
-  // ── CHATS LIST LOGIC ──
+  // Chats list logic.
   const getFilteredListSessions = (): ChatSession[] => {
     if (!listSearchQuery.trim()) return sessions
     const q = listSearchQuery.toLowerCase()
@@ -141,7 +141,7 @@ export const ChatPage: React.FC = () => {
       width: '100%',
       position: 'relative'
     }}>
-      {/* ── Sidebar ── */}
+      {/* Sidebar */}
       <Sidebar
         isOpen={viewMode === 'chats-list' ? false : isSidebarOpen} // Collapses sidebar automatically in Chats List as per screenshot
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -159,7 +159,7 @@ export const ChatPage: React.FC = () => {
         onOpenSearch={() => setIsSearchOpen(true)}
       />
 
-      {/* ── Main Canvas ── */}
+      {/* Main Canvas */}
       <main style={{
         flex: 1,
         display: 'flex',
@@ -183,12 +183,12 @@ export const ChatPage: React.FC = () => {
             justifyContent: 'space-between',
             zIndex: 20
           }}>
-            <span>⚠ {error}</span>
-            <button onClick={clearError} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✕</button>
+            <span>{error}</span>
+            <button onClick={clearError} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>x</button>
           </div>
         )}
 
-        {/* ── VIEWPORT MODE: CHATS LIST (Image 2 & 3) ── */}
+        {/* Viewport mode: chats list */}
         {viewMode === 'chats-list' ? (
           <div style={{
             flex: 1,
@@ -370,7 +370,7 @@ export const ChatPage: React.FC = () => {
                     onClick={() => setListSearchQuery('')}
                     style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: '1.1rem' }}
                   >
-                    ✕
+                    x
                   </button>
                 )}
               </div>
@@ -437,7 +437,7 @@ export const ChatPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          /* ── VIEWPORT MODE: CHAT WORKSPACE ── */
+          /* Viewport mode: chat workspace */
           <>
             {/* Header (Only visible during active chat) */}
             {!isNewChat && (
@@ -488,7 +488,7 @@ export const ChatPage: React.FC = () => {
                     gap: '12px',
                     margin: 0
                   }}>
-                    <span style={{ color: 'var(--color-accent-amber)' }}>{greetingIcon}</span>
+                    <span style={{ color: 'var(--color-accent-amber)' }}>{greetingLabel}</span>
                     {greetingTime}, {displayName}
                   </h2>
 
@@ -522,10 +522,10 @@ export const ChatPage: React.FC = () => {
                     marginTop: '-8px'
                   }}>
                     {[
-                      { label: 'Write', icon: '📝', prompt: 'Write a comprehensive guide on...' },
-                      { label: 'Learn', icon: '🎓', prompt: 'Explain the concept of...' },
-                      { label: 'Code', icon: '💻', prompt: 'Help me write code to...' },
-                      { label: 'Life stuff', icon: '☕', prompt: 'Plan a relaxing weekend itinerary for...' }
+                      { label: 'Write', icon: 'W', prompt: 'Write a comprehensive guide on...' },
+                      { label: 'Learn', icon: 'L', prompt: 'Explain the concept of...' },
+                      { label: 'Code', icon: 'C', prompt: 'Help me write code to...' },
+                      { label: 'Life stuff', icon: 'Life', prompt: 'Plan a relaxing weekend itinerary for...' }
                     ].map((chip) => (
                       <button
                         key={chip.label}
@@ -622,7 +622,7 @@ export const ChatPage: React.FC = () => {
         )}
       </main>
 
-      {/* ── 3. GLOBAL SEARCH MODAL OVERLAY (Image 4) ── */}
+      {/* Global search modal overlay */}
       {isSearchOpen && (
         <div style={{
           position: 'fixed',
@@ -675,7 +675,7 @@ export const ChatPage: React.FC = () => {
                 }}
                 style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: '1.2rem', padding: '4px' }}
               >
-                ✕
+                    x
               </button>
             </div>
 
@@ -751,7 +751,7 @@ export const ChatPage: React.FC = () => {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', cursor: 'pointer' }} onClick={() => setIsDeeperSearchEnabled(!isDeeperSearchEnabled)}>
                   <span className="claude-sans-control" style={{ fontSize: '0.925rem', fontWeight: 500, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🔍 Search inside message contents
+                    Search inside message contents
                   </span>
                   <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
                     Enables deep matching through historical conversation text

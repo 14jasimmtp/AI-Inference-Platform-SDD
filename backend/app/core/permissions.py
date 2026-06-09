@@ -6,7 +6,9 @@ in route handlers or service functions.
 """
 import logging
 from enum import Enum
+# pyrefly: ignore [missing-import]
 from fastapi import Depends
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_current_user
 from app.exceptions import ForbiddenError

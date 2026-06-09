@@ -133,27 +133,19 @@ export const LoginPage: React.FC = () => {
   }
 
   return (
-    <div style={{
+    <div className="warm-app-shell" style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--color-bg-canvas)',
-      color: 'var(--color-text-primary)',
       padding: '20px',
-      boxSizing: 'border-box',
-      transition: 'var(--transition-smooth)'
+      boxSizing: 'border-box'
     }}>
-      <div style={{
+      <div className="warm-surface-card" style={{
         width: '100%',
         maxWidth: '440px',
-        background: 'var(--color-bg-card)',
-        border: `1px solid var(--color-border-subtle)`,
-        borderRadius: 'var(--border-radius-card)',
         padding: '40px 36px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04)',
-        boxSizing: 'border-box',
-        transition: 'var(--transition-smooth)'
+        boxSizing: 'border-box'
       }}>
         {/* Logo and Headings */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
@@ -167,7 +159,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Message Alerts */}
         {error && (
-          <div className="claude-sans-control" style={{
+          <div className="claude-sans-control warm-status-note error" style={{
             background: 'rgba(239, 68, 68, 0.1)',
             border: '1px solid rgba(239, 68, 68, 0.2)',
             borderRadius: '8px',
@@ -180,12 +172,12 @@ export const LoginPage: React.FC = () => {
             boxSizing: 'border-box'
           }}>
             <span>{error}</span>
-            <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+            <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>x</button>
           </div>
         )}
 
         {successMsg && (
-          <div className="claude-sans-control" style={{
+          <div className="claude-sans-control warm-status-note success" style={{
             background: 'rgba(16, 185, 129, 0.1)',
             border: '1px solid rgba(16, 185, 129, 0.2)',
             borderRadius: '8px',
@@ -211,7 +203,7 @@ export const LoginPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="claude-sans-control claude-focus-ring"
+                className="claude-sans-control claude-focus-ring warm-form-control"
                 style={{
                   background: 'transparent',
                   border: '1px solid var(--color-border-subtle)',
@@ -238,7 +230,7 @@ export const LoginPage: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Muhamed Jasim"
-                  className="claude-sans-control claude-focus-ring"
+                  className="claude-sans-control claude-focus-ring warm-form-control"
                   style={{
                     background: 'transparent',
                     border: '1px solid var(--color-border-subtle)',
@@ -258,7 +250,7 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimum 8 characters"
-                  className="claude-sans-control claude-focus-ring"
+                  className="claude-sans-control claude-focus-ring warm-form-control"
                   style={{
                     background: 'transparent',
                     border: '1px solid var(--color-border-subtle)',
@@ -290,8 +282,8 @@ export const LoginPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="claude-sans-control claude-focus-ring"
+                  placeholder="********"
+                  className="claude-sans-control claude-focus-ring warm-form-control"
                   style={{
                     background: 'transparent',
                     border: '1px solid var(--color-border-subtle)',
@@ -310,7 +302,7 @@ export const LoginPage: React.FC = () => {
             {step !== 'email' && (
               <button
                 type="button"
-                className="claude-sans-control"
+                className="claude-sans-control warm-secondary-button"
                 onClick={() => {
                   setStep('email')
                   setPassword('')
@@ -333,7 +325,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="claude-sans-control"
+              className="claude-sans-control warm-primary-button"
               style={{
                 flex: 1,
                 padding: '12px',

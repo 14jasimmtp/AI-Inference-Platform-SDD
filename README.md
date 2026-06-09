@@ -307,7 +307,7 @@ erDiagram
 ### Frontend
 | Technology | Purpose |
 |---|---|
-| **React 18** | Component-based UI library |
+| **React 19** | Component-based UI library |
 | **Vite** | Fast build tool and dev server with HMR |
 | **TypeScript** | Type-safe JavaScript |
 | **Zustand** | Lightweight state management with `persist` middleware |

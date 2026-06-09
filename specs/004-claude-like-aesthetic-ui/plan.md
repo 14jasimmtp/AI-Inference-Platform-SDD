@@ -13,7 +13,7 @@ The platform UI will be upgraded to a sophisticated, warm-minimalist aesthetic s
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5 / React 18 / Node 20  
+**Language/Version**: TypeScript 6 / React 19 / Node 20  
 **Primary Dependencies**: TailwindCSS (if already configured) / Vanilla CSS custom properties, Zustand, Lucide React, Axios  
 **Storage**: Client localStorage (theme state caching)  
 **Testing**: Manual visual validation and React static asset compile verification (`npm run build`)  

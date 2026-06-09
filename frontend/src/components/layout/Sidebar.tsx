@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
 import { useTheme } from '../../hooks/useTheme'
+import { MessageSquare, Moon, PanelLeft, Search, Settings, Sun, Zap } from 'lucide-react'
 
 
 const getInitials = (name?: string) => {
@@ -47,14 +48,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Layout icon SVG shared between modes
   const ToggleIcon = () => (
-    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="9" y1="3" x2="9" y2="21" />
-    </svg>
+    <PanelLeft size={20} strokeWidth={2.2} />
   )
 
   if (!isOpen) {
-    // ── COLLAPSED SIDEBAR (64px Wide) ──
+    // Collapsed sidebar.
     return (
       <aside className="sidebar claude-sans-control" style={{
         background: 'var(--color-bg-card)',
@@ -153,13 +151,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               justifyContent: 'center',
               transition: 'var(--transition-smooth)'
             }}
-            title="Search Chats (🔍)"
+            title="Search chats"
             onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-text-primary)'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <Search size={20} strokeWidth={2.2} />
           </button>
 
           {/* Chats Bubble */}
@@ -178,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               justifyContent: 'center',
               transition: 'var(--transition-smooth)'
             }}
-            title="All Chats (💬)"
+            title="All chats"
             onMouseEnter={(e) => {
               if (activeTab !== 'chats-list') e.currentTarget.style.color = 'var(--color-text-primary)'
             }}
@@ -186,9 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               if (activeTab !== 'chats-list') e.currentTarget.style.color = 'var(--color-text-secondary)'
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+            <MessageSquare size={20} strokeWidth={2.2} />
           </button>
         </div>
 
@@ -207,7 +201,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            {isDark ? '☀️' : '🌙'}
+            {isDark ? <Sun size={16} strokeWidth={2.2} /> : <Moon size={16} strokeWidth={2.2} />}
           </button>
 
           {/* Settings cog */}
@@ -223,7 +217,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            ⚙️
+            <Settings size={16} strokeWidth={2.2} />
           </button>
 
           {/* MJ Initials Avatar Bubble */}
@@ -255,7 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     )
   }
 
-  // ── EXPANDED SIDEBAR (260px Wide) ──
+  // Expanded sidebar.
   return (
     <aside className="sidebar claude-sans-control" style={{
       background: 'var(--color-bg-card)',
@@ -273,7 +267,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Header logo & toggle */}
       <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid var(--color-border-subtle)', marginBottom: '8px' }}>
         <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className="logo-icon" style={{ fontSize: '1.3rem' }}>⚡</span>
+          <span className="logo-icon" style={{ display: 'flex', color: 'var(--color-accent-amber)' }}><Zap size={20} strokeWidth={2.2} /></span>
           <span className="claude-serif-title" style={{ fontSize: '1.1rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>AI Inference</span>
         </div>
 
@@ -353,7 +347,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>New chat</span>
         </button>
 
-        {/* 🔍 Search trigger button */}
+        {/* Search trigger button */}
         <button
           onClick={onOpenSearch}
           className="claude-focus-ring"
@@ -375,13 +369,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Search size={20} strokeWidth={2.2} color="var(--color-text-secondary)" style={{ flexShrink: 0 }} />
           <span>Search</span>
         </button>
 
-        {/* 💬 Chats trigger button */}
+        {/* Chats trigger button */}
         <button
           onClick={() => onChangeTab('chats-list')}
           className="claude-focus-ring"
@@ -407,9 +399,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             if (activeTab !== 'chats-list') e.currentTarget.style.background = 'transparent'
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab === 'chats-list' ? 'var(--color-accent-amber)' : 'var(--color-text-secondary)'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+          <MessageSquare size={20} strokeWidth={2.2} color={activeTab === 'chats-list' ? 'var(--color-accent-amber)' : 'var(--color-text-secondary)'} style={{ flexShrink: 0 }} />
           <span>Chats</span>
         </button>
       </div>
@@ -554,7 +544,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            {isDark ? '☀️' : '🌙'}
+            {isDark ? <Sun size={16} strokeWidth={2.2} /> : <Moon size={16} strokeWidth={2.2} />}
           </button>
 
           {/* Settings Button */}
@@ -576,7 +566,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             title="Settings"
           >
-            ⚙️
+            <Settings size={16} strokeWidth={2.2} />
           </button>
 
           {/* Logout Button */}
