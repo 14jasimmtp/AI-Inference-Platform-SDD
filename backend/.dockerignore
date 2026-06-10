@@ -13,9 +13,17 @@ venv/
 dist/
 build/
 
+# Node.js
+node_modules/
+dist/
+build/
+.next/
+npm-debug.log*
+
 # Environment
 .env
 .env*
+!.env.example
 
 # Documentation/Meta
 specs/

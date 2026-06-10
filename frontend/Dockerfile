@@ -10,9 +10,12 @@ RUN npm install
 # Copy source code
 COPY . .
 
+RUN chown -R node:node /frontend
+
+USER node
+
 # Expose Vite's default port
 EXPOSE 3000
 
 # Start Vite dev server on all network interfaces
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
-

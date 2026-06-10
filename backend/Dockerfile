@@ -19,6 +19,11 @@ RUN uv pip install --system --no-cache .
 # Copy application code
 COPY . .
 
+RUN adduser --disabled-password appuser \
+    && chown -R appuser /backend
+
+USER appuser
+
 # Expose port
 EXPOSE 8000
 
