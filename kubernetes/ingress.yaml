@@ -6,13 +6,11 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   tls:
   - secretName: platform-tls
   rules:
-  - http:
+  - https:
       paths:
       - path: /api
         pathType: Prefix
