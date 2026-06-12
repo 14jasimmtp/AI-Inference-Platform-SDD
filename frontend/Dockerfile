@@ -1,4 +1,4 @@
-# Use development setup for frontend
+# Use production-ready setup for frontend
 FROM node:20-slim
 
 WORKDIR /frontend
@@ -14,8 +14,8 @@ RUN chown -R node:node /frontend
 
 USER node
 
-# Expose Vite's default port
+# Expose frontend port
 EXPOSE 3000
 
-# Start Vite dev server on all network interfaces
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
+# Build frontend assets and serve with Vite preview
+CMD ["sh", "-c", "npm run build && npm run preview -- --host 0.0.0.0 --port 3000"]

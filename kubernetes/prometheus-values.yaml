@@ -1,0 +1,33 @@
+# Minimal configuration for kube-prometheus-stack for local Minikube
+# Disables AlertManager to save memory
+alertmanager:
+  enabled: false
+
+grafana:
+  # Expose Grafana on a NodePort instead of ClusterIP
+  service:
+    type: NodePort
+    nodePort: 32000
+  
+  # Configure the sidecar to pick up the Loki datasource we created earlier
+  sidecar:
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+      searchNamespace: ALL
+
+prometheus:
+  prometheusSpec:
+    # Allow Prometheus to discover ServiceMonitors in ANY namespace
+    # as long as they have the 'release: prometheus-stack' label
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchLabels:
+        release: prometheus-stack
+    
+    # Lower resource requests for local Minikube
+    resources:
+      requests:
+        memory: 400Mi
+        cpu: 100m
