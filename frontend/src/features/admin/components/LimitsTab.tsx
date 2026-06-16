@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { orgsApi, usersApi } from '../../../../api/admin'
-import { authApi } from '../../../../api/auth'
+import { orgsApi, usersApi } from '../../../api/admin'
+import { authApi } from '../../../api/auth'
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react'
-import { Card } from '../../../../components/ui/Card'
-import { Input } from '../../../../components/ui/Input'
-import { Select } from '../../../../components/ui/Select'
-import { PrimaryButton } from '../../../../components/ui/PrimaryButton'
+import { Card } from '../../../components/ui/Card'
+import { Input } from '../../../components/ui/Input'
+import { Select } from '../../../components/ui/Select'
+import { PrimaryButton } from '../../../components/ui/PrimaryButton'
 
 export const LimitsTab = ({ userOrgId, userLevel }: { userOrgId: string, userLevel: number }) => {
   const [limit, setLimit] = useState<number>(60)
@@ -165,7 +165,7 @@ export const LimitsTab = ({ userOrgId, userLevel }: { userOrgId: string, userLev
             <span style={{ fontWeight: 600 }}>Select Organization to Manage:</span>
             <Select
               value={selectedAdminOrgId}
-              onChange={e => setSelectedAdminOrgId(e.target.value)}
+              onChange={(e: any) => setSelectedAdminOrgId(e.target.value)}
               style={{ flex: 1, maxWidth: '400px' }}
             >
               <option value="">-- Select an Organization --</option>
@@ -193,7 +193,7 @@ export const LimitsTab = ({ userOrgId, userLevel }: { userOrgId: string, userLev
                       type="number"
                       placeholder="Inherit global default (60)"
                       value={orgLimitInput}
-                      onChange={e => setOrgLimitInput(e.target.value)}
+                      onChange={(e: any) => setOrgLimitInput(e.target.value)}
                       min={1}
                       max={10000}
                     />
@@ -283,7 +283,7 @@ const UserRow = ({ u, handleUpdateUserLimit }: { u: any, handleUpdateUserLimit: 
           type="number"
           placeholder="Inherit Org Limit"
           value={rpmInput}
-          onChange={e => setRpmInput(e.target.value)}
+          onChange={(e: any) => setRpmInput(e.target.value)}
           style={{ maxWidth: '150px' }}
         />
       </td>

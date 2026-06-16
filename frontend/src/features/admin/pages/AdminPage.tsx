@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../../store/authStore'
 import { useTheme } from '../../../hooks/useTheme'
@@ -24,9 +24,7 @@ export const AdminPage: React.FC = () => {
 
   const userLevel = roleHierarchy[(user?.role as keyof typeof roleHierarchy)] || 1
 
-  useEffect(() => {
-    if (userLevel < 4 && activeTab === 'keys') setActiveTab('limits')
-  }, [userLevel, activeTab])
+
 
   return (
     <div className="claude-sans-control" style={{

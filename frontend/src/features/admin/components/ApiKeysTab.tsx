@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { apiKeysAdminApi } from '../../../../api/admin'
+import { apiKeysAdminApi } from '../../../api/admin'
 import { Plus, Trash2, RefreshCw } from 'lucide-react'
-import { Card } from '../../../../components/ui/Card'
-import { Input } from '../../../../components/ui/Input'
-import { PrimaryButton } from '../../../../components/ui/PrimaryButton'
-import { SectionTitle } from '../../../../components/ui/SectionTitle'
+import { Card } from '../../../components/ui/Card'
+import { Input } from '../../../components/ui/Input'
+import { PrimaryButton } from '../../../components/ui/PrimaryButton'
+import { SectionTitle } from '../../../components/ui/SectionTitle'
 
 export const ApiKeysTab = () => {
   const [keys, setKeys] = useState<any[]>([])
@@ -86,7 +86,7 @@ export const ApiKeysTab = () => {
             type="text"
             placeholder="Key Name (e.g. Production Web)"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e: any) => setName(e.target.value)}
             required
             style={{ flex: 1 }}
           />

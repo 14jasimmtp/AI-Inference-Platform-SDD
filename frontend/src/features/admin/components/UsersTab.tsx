@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { usersApi } from '../../../../api/admin'
-import { useAuthStore } from '../../../../store/authStore'
+import { usersApi } from '../../../api/admin'
+import { useAuthStore } from '../../../store/authStore'
 import { Plus, Trash2 } from 'lucide-react'
-import { Card } from '../../../../components/ui/Card'
-import { Input } from '../../../../components/ui/Input'
-import { Select } from '../../../../components/ui/Select'
-import { PrimaryButton } from '../../../../components/ui/PrimaryButton'
-import { SectionTitle } from '../../../../components/ui/SectionTitle'
+import { Card } from '../../../components/ui/Card'
+import { Input } from '../../../components/ui/Input'
+import { Select } from '../../../components/ui/Select'
+import { PrimaryButton } from '../../../components/ui/PrimaryButton'
+import { SectionTitle } from '../../../components/ui/SectionTitle'
 
 export const UsersTab = ({ userOrgId, userLevel, hideTitle }: { userOrgId: string, userLevel: number, hideTitle?: boolean }) => {
   const { user: currentUser } = useAuthStore()
@@ -71,13 +71,13 @@ export const UsersTab = ({ userOrgId, userLevel, hideTitle }: { userOrgId: strin
               type="email"
               placeholder="Email address"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: any) => setEmail(e.target.value)}
               required
               style={{ flex: 1 }}
             />
             <Select
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e: any) => setRole(e.target.value)}
             >
               <option value="user">User</option>
               <option value="team_lead">Team Lead</option>
@@ -109,7 +109,7 @@ export const UsersTab = ({ userOrgId, userLevel, hideTitle }: { userOrgId: strin
                   {userLevel >= 3 && u.user_id !== currentUser?.id ? (
                     <Select
                       value={u.role}
-                      onChange={async (e) => {
+                      onChange={async (e: any) => {
                         const newRole = e.target.value
                         try {
                           await usersApi.updateRole(userOrgId, u.user_id, newRole)

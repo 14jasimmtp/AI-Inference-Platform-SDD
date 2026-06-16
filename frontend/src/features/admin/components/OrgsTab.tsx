@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { orgsApi, usersApi } from '../../../../api/admin'
-import { useAuthStore } from '../../../../store/authStore'
+import { orgsApi, usersApi } from '../../../api/admin'
+import { useAuthStore } from '../../../store/authStore'
 import { Plus, Trash2, RefreshCw } from 'lucide-react'
-import { Card } from '../../../../components/ui/Card'
-import { Input } from '../../../../components/ui/Input'
-import { PrimaryButton } from '../../../../components/ui/PrimaryButton'
-import { SectionTitle } from '../../../../components/ui/SectionTitle'
+import { Card } from '../../../components/ui/Card'
+import { Input } from '../../../components/ui/Input'
+import { PrimaryButton } from '../../../components/ui/PrimaryButton'
+import { SectionTitle } from '../../../components/ui/SectionTitle'
 import { UsersTab } from './UsersTab'
 
 export const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: string) => void, userLevel: number, setActiveTab: (tab: any) => void }) => {
@@ -72,7 +72,7 @@ export const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: 
                 type="text"
                 placeholder="e.g. My Awesome Team"
                 value={newOrgName}
-                onChange={(e) => setNewOrgName(e.target.value)}
+                onChange={(e: any) => setNewOrgName(e.target.value)}
                 required
               />
             </div>
@@ -82,7 +82,7 @@ export const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: 
                 type="text"
                 placeholder="e.g. my-team"
                 value={newOrgSlug}
-                onChange={(e) => setNewOrgSlug(e.target.value)}
+                onChange={(e: any) => setNewOrgSlug(e.target.value)}
                 required
                 pattern="[a-z0-9-]+"
               />
@@ -159,7 +159,7 @@ export const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: 
             type="text"
             placeholder="Name (e.g. Acme Corp)"
             value={newOrgName}
-            onChange={(e) => setNewOrgName(e.target.value)}
+            onChange={(e: any) => setNewOrgName(e.target.value)}
             required
             style={{ flex: 1 }}
           />
@@ -167,7 +167,7 @@ export const OrgsTab = ({ onSelect, userLevel, setActiveTab }: { onSelect: (id: 
             type="text"
             placeholder="Slug (e.g. acme-corp)"
             value={newOrgSlug}
-            onChange={(e) => setNewOrgSlug(e.target.value)}
+            onChange={(e: any) => setNewOrgSlug(e.target.value)}
             required
             pattern="[a-z0-9-]+"
             style={{ flex: 1 }}

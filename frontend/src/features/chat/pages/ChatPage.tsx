@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useChatStore } from '../../../store/chatStore'
 import type { ChatSession } from '../../../store/chatStore'
 import { useAuthStore } from '../../../store/authStore'
