@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.modules.orgs.models import Organisation
 from app.modules.users.models import User
 from app.modules.api_keys.models import ApiKey
-from app.exceptions import NotFoundError, ConflictError
+from app.core.exceptions import NotFoundError, ConflictError
 
 logger = logging.getLogger(__name__)
 

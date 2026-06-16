@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.modules.users.models import User
-from app.schemas.base import ok
+from app.core.schemas import ok
 from app.modules.users.schemas import InviteUserRequest, UpdateRoleRequest, UpdateUserRateLimitRequest
 from app.core.permissions import (
     UserRole,

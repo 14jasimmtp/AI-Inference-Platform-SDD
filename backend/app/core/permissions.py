@@ -10,8 +10,8 @@ from enum import Enum
 from fastapi import Depends
 # pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.dependencies import get_current_user
-from app.exceptions import ForbiddenError
+from app.core.dependencies import get_current_user
+from app.core.exceptions import ForbiddenError
 from app.modules.users.models import User
 
 logger = logging.getLogger(__name__)

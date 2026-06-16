@@ -6,8 +6,8 @@ from sqlalchemy import select
 from app.modules.users.models import User
 from app.modules.auth.schemas import UserRegisterRequest
 from app.core.auth import get_password_hash, verify_password, create_access_token, generate_secure_token
-from app.exceptions import ConflictError, UnauthorizedError, NotFoundError
-from app.services.email_service import EmailService
+from app.core.exceptions import ConflictError, UnauthorizedError, NotFoundError
+from app.infrastructure.email_client import EmailService
 
 logger = logging.getLogger(__name__)
 

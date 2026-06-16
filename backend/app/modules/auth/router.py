@@ -10,9 +10,9 @@ from app.modules.auth.schemas import (
     UserResponse,
     GoogleSsoRequest
 )
-from app.schemas.base import ok
+from app.core.schemas import ok
 from app.modules.auth.service import AuthService
-from app.dependencies import get_current_user
+from app.core.dependencies import get_current_user
 from app.modules.users.models import User
 from app.config import settings
 

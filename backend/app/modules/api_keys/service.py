@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from app.modules.api_keys.models import ApiKey
 from app.modules.users.models import User
 from app.core.permissions import assert_can_manage_key, UserRole
-from app.exceptions import NotFoundError, ForbiddenError, ConflictError
+from app.core.exceptions import NotFoundError, ForbiddenError, ConflictError
 
 logger = logging.getLogger(__name__)
 
@@ -221,7 +221,7 @@ class ApiKeyService:
 
     async def authenticate_by_key(self, raw_key: str, db: AsyncSession) -> ApiKey:
         """Validate raw API key. Returns the ApiKey object or raises UnauthorizedError."""
-        from app.exceptions import UnauthorizedError
+        from app.core.exceptions import UnauthorizedError
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         result = await db.execute(
             select(ApiKey).where(

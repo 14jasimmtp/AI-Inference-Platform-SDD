@@ -13,7 +13,7 @@ from app.modules.users.models import User, UserRole as ModelUserRole
 from app.modules.api_keys.models import ApiKey
 from app.core.auth import get_password_hash
 from app.core.permissions import assert_can_assign_role, assert_same_org
-from app.exceptions import (
+from app.core.exceptions import (
     NotFoundError,
     ForbiddenError,
     ConflictError,

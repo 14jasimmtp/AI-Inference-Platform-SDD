@@ -2,7 +2,7 @@ import time
 import logging
 import redis.asyncio as redis
 from app.config import settings
-from app.exceptions import RateLimitError
+from app.core.exceptions import RateLimitError
 
 logger = logging.getLogger(__name__)
 

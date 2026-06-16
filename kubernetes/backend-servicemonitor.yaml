@@ -4,7 +4,7 @@ metadata:
   name: backend-monitor
   namespace: ai-platform
   labels:
-    release: prometheus-stack # Matches the default helm release name of the prometheus-stack
+    release: prometheus-stack
     app: backend
 spec:
   selector:
@@ -14,4 +14,4 @@ spec:
     - port: http
       path: /metrics
       interval: 15s
-      scrapeTimeout: 10s
+      scrapeTimeout: 10s #podMonitor

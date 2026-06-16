@@ -17,12 +17,12 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ai-inference-platform-sdd-api-backend:latest
+          image: ai-inference-platform-sdd-api-backend:latest # replace with actual image tag
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: true  # explore where logs being stored
             allowPrivilegeEscalation: false
             capabilities:
               drop:

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { authApi } from '../../../api/auth'
 import { useAuthStore } from '../../../store/authStore'
 import { GoogleSsoButton } from '../components/GoogleSsoButton'
+import { EmailStep } from '../components/EmailStep'
+import { PasswordLoginStep } from '../components/PasswordLoginStep'
+import { PasswordSignupStep } from '../components/PasswordSignupStep'
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate()
@@ -194,109 +197,10 @@ export const LoginPage: React.FC = () => {
 
         {/* Dynamic Form Wizard */}
         <form onSubmit={step === 'email' ? handleEmailSubmit : handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {step === 'email' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Email address</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="claude-sans-control claude-focus-ring warm-form-control"
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border-subtle)',
-                  borderRadius: '8px',
-                  padding: '12px 14px',
-                  color: 'var(--color-text-primary)',
-                  boxSizing: 'border-box',
-                  width: '100%',
-                }}
-              />
-            </div>
-          )}
-
-          {step === 'password-signup' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="claude-sans-control" style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.08)', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.15)', boxSizing: 'border-box' }}>
-                Email not registered. Proceed to set up a new account.
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Muhamed Jasim"
-                  className="claude-sans-control claude-focus-ring warm-form-control"
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid var(--color-border-subtle)',
-                    borderRadius: '8px',
-                    padding: '12px 14px',
-                    color: 'var(--color-text-primary)',
-                    boxSizing: 'border-box',
-                    width: '100%',
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Choose Password</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 8 characters"
-                  className="claude-sans-control claude-focus-ring warm-form-control"
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid var(--color-border-subtle)',
-                    borderRadius: '8px',
-                    padding: '12px 14px',
-                    color: 'var(--color-text-primary)',
-                    boxSizing: 'border-box',
-                    width: '100%',
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {step === 'password-login' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="claude-sans-control" style={{ color: 'var(--color-text-primary)', background: 'var(--color-bg-canvas)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--color-border-subtle)', boxSizing: 'border-box' }}>
-                Welcome! Please enter your password to sign in or create an account.
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="claude-sans-control" style={{ color: 'var(--color-text-primary)' }}>Password</label>
-                  <button type="button" className="claude-sans-control" onClick={handleForgotPassword} style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', padding: 0 }}>
-                    Forgot password?
-                  </button>
-                </div>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="********"
-                  className="claude-sans-control claude-focus-ring warm-form-control"
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid var(--color-border-subtle)',
-                    borderRadius: '8px',
-                    padding: '12px 14px',
-                    color: 'var(--color-text-primary)',
-                    boxSizing: 'border-box',
-                    width: '100%',
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          
+          {step === 'email' && <EmailStep email={email} setEmail={setEmail} />}
+          {step === 'password-signup' && <PasswordSignupStep fullName={fullName} setFullName={setFullName} password={password} setPassword={setPassword} />}
+          {step === 'password-login' && <PasswordLoginStep password={password} setPassword={setPassword} handleForgotPassword={handleForgotPassword} />}
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
             {step !== 'email' && (

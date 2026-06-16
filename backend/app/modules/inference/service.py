@@ -11,7 +11,7 @@ from app.modules.inference.schemas import (
     ChatCompletionChoice, ChatCompletionUsage, ChatMessage,
     ModelListResponse, ModelInfo,
 )
-from app.exceptions import InferenceUnavailableError
+from app.core.exceptions import InferenceUnavailableError
 from app.core.metrics import (
     inference_requests_total,
     inference_duration_seconds,

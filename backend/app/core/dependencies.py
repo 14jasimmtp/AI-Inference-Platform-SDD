@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 from app.db.session import get_db
 from app.config import settings
-from app.exceptions import UnauthorizedError
+from app.core.exceptions import UnauthorizedError
 from app.modules.users.models import User
 from app.modules.api_keys.models import ApiKey
 from sqlalchemy import select

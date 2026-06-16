@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Header
 from fastapi.responses import StreamingResponse
 from app.modules.inference.schemas import ChatCompletionRequest, ChatCompletionResponse, ModelListResponse
 from app.modules.inference.service import inference_service
-from app.dependencies import get_api_key_user
+from app.core.dependencies import get_api_key_user
 from app.modules.users.models import User
 from app.core.rate_limiter import rate_limiter
 from app.config import settings

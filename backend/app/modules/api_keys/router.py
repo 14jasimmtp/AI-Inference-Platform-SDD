@@ -15,9 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.modules.users.models import User
-from app.schemas.base import ok
+from app.core.schemas import ok
 from app.modules.api_keys.schemas import ApiKeyCreateRequest
-from app.dependencies import get_current_user
+from app.core.dependencies import get_current_user
 from app.modules.api_keys import service as api_key_service
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ async def create_key(
     org_id = current_user.org_id
 
     if not org_id:
-        from app.exceptions import ValidationError
+        from app.core.exceptions import ValidationError
         raise ValidationError("You must belong to an organisation to create API keys")
 
     api_key, plaintext = await api_key_service.create_api_key(

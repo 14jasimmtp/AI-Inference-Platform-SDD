@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.modules.users.models import User
-from app.schemas.base import ok
+from app.core.schemas import ok
 from app.modules.orgs.schemas import OrgCreateRequest, OrgUpdateRequest
 from app.core.permissions import (
     UserRole,
@@ -23,7 +23,7 @@ from app.core.permissions import (
     require_min_role,
     assert_same_org,
 )
-from app.dependencies import get_current_user
+from app.core.dependencies import get_current_user
 from app.modules.orgs import service as org_service
 
 logger = logging.getLogger(__name__)
